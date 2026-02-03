@@ -25,7 +25,7 @@ class UserContact
     private ?string $email = null;
 
     #[ORM\ManyToOne(inversedBy: 'userContacts')]
-    private ?User $userId = null;
+    private ?User $user = null;
 
     /**
      * @var Collection<int, Generation>
@@ -80,14 +80,14 @@ class UserContact
         return $this;
     }
 
-    public function getUserId(): ?User
+    public function getUser(): ?User
     {
-        return $this->userId;
+        return $this->user;
     }
 
-    public function setUserId(?User $userId): static
+    public function setUser(?User $user): static
     {
-        $this->userId = $userId;
+        $this->user = $user;
 
         return $this;
     }
