@@ -65,17 +65,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $phone = null;
 
-    /**
-     * @var Collection<int, Plan>
-     */
-    #[ORM\OneToMany(targetEntity: Plan::class, mappedBy: 'user')]
-    private Collection $plans;
+    #[ORM\ManyToOne(inversedBy: 'users')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Plan $plan = null;
 
     public function __construct()
     {
         $this->userContacts = new ArrayCollection();
         $this->generations = new ArrayCollection();
-        $this->plans = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -291,32 +288,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @return Collection<int, Plan>
-     */
-    public function getPlans(): Collection
+    public function getPlan(): ?Plan
     {
-        return $this->plans;
+        return $this->plan;
     }
 
-    public function addPlan(Plan $plan): static
+    public function setPlan(?Plan $plan): static
     {
-        if (!$this->plans->contains($plan)) {
-            $this->plans->add($plan);
-            $plan->setUser($this);
-        }
-
-        return $this;
-    }
-
-    public function removePlan(Plan $plan): static
-    {
-        if ($this->plans->removeElement($plan)) {
-            // set the owning side to null (unless already changed)
-            if ($plan->getUser() === $this) {
-                $plan->setUser(null);
-            }
-        }
+        $this->plan = $plan;
 
         return $this;
     }
