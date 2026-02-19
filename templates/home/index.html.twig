@@ -1,9 +1,9 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello HomeController!{% endblock %}
+{% block title %}ZenPDF - Convertissez vos fichiers en PDF{% endblock %}
 
 {% block body %}
-    <div {{ react_component('PageLayout') }}>
+    <div {{ react_component('PageLayout', { plans: plans, tools: tools }) }}>
         Loading...
     </div>
 {% endblock %}

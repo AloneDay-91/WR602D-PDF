@@ -5,12 +5,12 @@ import PricingSection from "../components/sections/PricingSection";
 import FaqSection from "../components/sections/FaqSection";
 import CtaSection from "../components/sections/CtaSection";
 
-export default function Home() {
+export default function Home({ plans = [], tools = [] }) {
     return (
         <div className="bg-grid">
             <HeroSection />
-            <ToolsSection />
-            <PricingSection />
+            <ToolsSection tools={tools} />
+            <PricingSection plans={plans} />
             <FaqSection />
             <CtaSection />
         </div>

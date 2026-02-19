@@ -28,6 +28,9 @@ class Tool
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $color = null;
 
+    #[ORM\Column(length: 255, unique: true, nullable: true)]
+    private ?string $slug = null;
+
     #[ORM\Column]
     private ?bool $isActive = null;
 
@@ -91,6 +94,18 @@ class Tool
     public function setColor(?string $color): static
     {
         $this->color = $color;
+
+        return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(?string $slug): static
+    {
+        $this->slug = $slug;
 
         return $this;
     }

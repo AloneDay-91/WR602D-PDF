@@ -1,41 +1,21 @@
 import React from "react";
-import { FileText, Image, Globe, FileCode, Combine, FileDown } from "lucide-react";
+import { icons } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { Badge } from "../ui/badge";
 
-const tools = [
-    {
-        icon: Globe,
-        title: "URL vers PDF",
-        description: "Convertissez n'importe quelle page web en document PDF depuis son URL.",
-    },
-    {
-        icon: FileText,
-        title: "HTML vers PDF",
-        description: "Transformez vos fichiers HTML en PDF avec un rendu fidèle.",
-    },
-    {
-        icon: Image,
-        title: "Image vers PDF",
-        description: "Convertissez vos images JPG, PNG ou WebP en documents PDF.",
-    },
-    {
-        icon: FileCode,
-        title: "Markdown vers PDF",
-        description: "Générez des PDF propres depuis vos fichiers Markdown.",
-    },
-    {
-        icon: Combine,
-        title: "Fusionner PDF",
-        description: "Combinez plusieurs fichiers PDF en un seul document.",
-    },
-    {
-        icon: FileDown,
-        title: "Compresser PDF",
-        description: "Réduisez la taille de vos PDF sans perdre en qualité.",
-    },
-];
+function getIcon(iconName) {
+    return icons[iconName] || icons.Wrench;
+}
 
-export default function ToolsSection() {
+const planBadgeVariant = {
+    FREE: "outline",
+    BASIC: "secondary",
+    PREMIUM: "default",
+};
+
+export default function ToolsSection({ tools = [] }) {
+    if (tools.length === 0) return null;
+
     return (
         <section className="py-20 px-4 bg-background border-y">
             <div className="max-w-5xl mx-auto space-y-12">
@@ -47,20 +27,32 @@ export default function ToolsSection() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {tools.map((tool) => (
-                        <Card
-                            key={tool.title}
-                            className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 shadow-none"
-                        >
-                            <CardHeader className="space-y-3">
-                                <div className="rounded-lg bg-secondary p-2.5 w-fit group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                    <tool.icon className="h-5 w-5" />
-                                </div>
-                                <CardTitle className="text-base">{tool.title}</CardTitle>
-                                <CardDescription>{tool.description}</CardDescription>
-                            </CardHeader>
-                        </Card>
-                    ))}
+                    {tools.map((tool) => {
+                        const Icon = getIcon(tool.icon);
+                        const planName = tool.minPlan?.name;
+                        const variant = planBadgeVariant[planName] ?? "outline";
+                        return (
+                            <a href={`/convertisseur/${tool.slug}`} className="group">
+                                <Card
+                                    key={tool.id}
+                                    className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 shadow-none"
+                                >
+                                    <CardHeader className="space-y-3">
+                                        <div className="flex items-start justify-between">
+                                            <div className="rounded-lg bg-secondary p-2.5 w-fit group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                                <Icon className="h-5 w-5 text-primary hover:text-primary-foreground transition-colors group-hover:text-primary-foreground" />
+                                            </div>
+                                            {planName && (
+                                                <Badge variant={variant}>{planName}</Badge>
+                                            )}
+                                        </div>
+                                        <CardTitle className="text-base">{tool.name}</CardTitle>
+                                        <CardDescription>{tool.description}</CardDescription>
+                                    </CardHeader>
+                                </Card>
+                            </a>
+                        );
+                    })}
                 </div>
             </div>
         </section>
