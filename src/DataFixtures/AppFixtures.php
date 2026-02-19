@@ -50,6 +50,7 @@ class AppFixtures extends Fixture
         $tool->setDescription('Convertissez une URL vers PDF');
         $tool->setColor('blue');
         $tool->setIcon('fa-solid fa-link');
+        $tool->setSlug('url');
         $tool->setIsActive(true);
         $tool->addPlan($planFree);
         $tool->addPlan($planBasic);
@@ -63,6 +64,7 @@ class AppFixtures extends Fixture
         $tool->setDescription('Convertissez un fichier HTML vers PDF');
         $tool->setColor('pink');
         $tool->setIcon('fa-solid fa-html5');
+        $tool->setSlug('html');
         $tool->setIsActive(true);
         $tool->addPlan($planBasic);
         $tool->addPlan($planPremium);

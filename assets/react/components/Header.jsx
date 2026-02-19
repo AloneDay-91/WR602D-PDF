@@ -1,5 +1,5 @@
 import React from 'react';
-import { Globe, FileText, Image, FileCode, Combine, FileDown } from 'lucide-react';
+import { icons } from 'lucide-react';
 import { Button } from './ui/button';
 import { ModeToggle } from './ModeToggle';
 import { useTheme } from './ThemeProvider';
@@ -14,14 +14,9 @@ import {
 } from './ui/navigation-menu';
 import { cn } from '../lib/utils';
 
-const tools = [
-    { icon: Globe, title: "URL vers PDF", href: "/convertisseur", description: "Convertissez une page web en PDF depuis son URL." },
-    { icon: FileText, title: "HTML vers PDF", href: "/convertisseur", description: "Transformez vos fichiers HTML en PDF." },
-    { icon: Image, title: "Image vers PDF", href: "/convertisseur", description: "Convertissez vos images en PDF." },
-    { icon: FileCode, title: "Markdown vers PDF", href: "/convertisseur", description: "Générez des PDF depuis vos fichiers Markdown." },
-    { icon: Combine, title: "Fusionner PDF", href: "/convertisseur", description: "Combinez plusieurs PDF en un seul." },
-    { icon: FileDown, title: "Compresser PDF", href: "/convertisseur", description: "Réduisez la taille de vos PDF." },
-];
+function getIcon(iconName) {
+    return icons[iconName] || icons.Wrench;
+}
 
 function ListItem({ className, title, icon: Icon, children, href, ...props }) {
     return (
@@ -48,7 +43,7 @@ function ListItem({ className, title, icon: Icon, children, href, ...props }) {
     );
 }
 
-export default function Header() {
+export default function Header({ tools = [] }) {
     const { theme } = useTheme();
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const logoSrc = isDark ? '/images/logo-icon-dark.png' : '/images/logo-icon.png';
@@ -71,23 +66,28 @@ export default function Header() {
                                 </NavigationMenuLink>
                             </NavigationMenuItem>
 
-                            <NavigationMenuItem>
-                                <NavigationMenuTrigger>Outils</NavigationMenuTrigger>
-                                <NavigationMenuContent>
-                                    <ul className="grid w-[400px] gap-1 p-3 md:w-[500px] md:grid-cols-2">
-                                        {tools.map((tool) => (
-                                            <ListItem
-                                                key={tool.title}
-                                                title={tool.title}
-                                                icon={tool.icon}
-                                                href={tool.href}
-                                            >
-                                                {tool.description}
-                                            </ListItem>
-                                        ))}
-                                    </ul>
-                                </NavigationMenuContent>
-                            </NavigationMenuItem>
+                            {tools.length > 0 && (
+                                <NavigationMenuItem>
+                                    <NavigationMenuTrigger>Outils</NavigationMenuTrigger>
+                                    <NavigationMenuContent>
+                                        <ul className="grid w-[400px] gap-1 p-3 md:w-[500px] md:grid-cols-2">
+                                            {tools.map((tool) => {
+                                                const Icon = getIcon(tool.icon);
+                                                return (
+                                                    <ListItem
+                                                        key={tool.id}
+                                                        title={tool.name}
+                                                        icon={Icon}
+                                                        href={`/convertisseur/${tool.slug}`}
+                                                    >
+                                                        {tool.description}
+                                                    </ListItem>
+                                                );
+                                            })}
+                                        </ul>
+                                    </NavigationMenuContent>
+                                </NavigationMenuItem>
+                            )}
 
                             <NavigationMenuItem>
                                 <NavigationMenuLink href="/history" className={navigationMenuTriggerStyle()}>

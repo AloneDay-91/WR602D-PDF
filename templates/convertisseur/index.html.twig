@@ -1,23 +1,9 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Convertisseur URL vers PDF{% endblock %}
+{% block title %}ZenPDF - Convertisseur{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .btn { padding: 0.75rem 1.5rem; font-size: 1rem; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    .btn:hover { background-color: #0056b3; }
-</style>
-
-<div class="example-wrapper">
-    <h1>Convertisseur vers PDF</h1>
-
-    {{ form_start(form) }}
-        {{ form_row(form.url) }}
-        <hr>
-        {{ form_row(form.htmlFile) }}
-        <br>
-        <button type="submit" class="btn">Convertir en PDF</button>
-    {{ form_end(form) }}
-</div>
+    <div {{ react_component('ConvertPage', { tools: tools, allTools: allTools|default(tools) }) }}>
+        Loading...
+    </div>
 {% endblock %}
