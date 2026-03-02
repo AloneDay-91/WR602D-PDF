@@ -3,7 +3,11 @@
 {% block title %}ZenPDF - Convertisseur{% endblock %}
 
 {% block body %}
-    <div {{ react_component('ConvertPage', { tools: tools, allTools: allTools|default(tools) }) }}>
+    <div {{ react_component('ConvertPage', {
+        tools: tools,
+        allTools: allTools|default(tools),
+        user: app.user ? { firstname: app.user.firstname, lastname: app.user.lastname, email: app.user.email } : null
+    }) }}>
         Loading...
     </div>
 {% endblock %}
