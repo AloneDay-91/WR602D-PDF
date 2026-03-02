@@ -3,7 +3,12 @@
 {% block title %}ZenPDF - Formules & Tarifs{% endblock %}
 
 {% block body %}
-    <div {{ react_component('PricingPage', { plans: plans, tools: tools }) }}>
+    <div {{ react_component('PricingPage', {
+        plans: plans,
+        tools: tools,
+        user: app.user ? { firstname: app.user.firstname, lastname: app.user.lastname, email: app.user.email } : null,
+        currentPlanId: currentPlanId
+    }) }}>
         Loading...
     </div>
 {% endblock %}
