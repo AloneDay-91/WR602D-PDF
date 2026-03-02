@@ -3,7 +3,11 @@
 {% block title %}ZenPDF - Convertissez vos fichiers en PDF{% endblock %}
 
 {% block body %}
-    <div {{ react_component('PageLayout', { plans: plans, tools: tools }) }}>
+    <div {{ react_component('PageLayout', {
+        plans: plans,
+        tools: tools,
+        user: app.user ? { firstname: app.user.firstname, lastname: app.user.lastname, email: app.user.email } : null
+    }) }}>
         Loading...
     </div>
 {% endblock %}
