@@ -1,0 +1,9 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Email envoyé{% endblock %}
+
+{% block body %}
+    <div {{ react_component('CheckEmailPage', {
+        expiresAt: expiresAt
+    }) }}></div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion{% endblock %}
+
+{% block body %}
+    <div {{ react_component('LoginPage', {
+        last_username: last_username,
+        error: error,
+        csrfToken: csrf_token('authenticate')
+    }) }}></div>
+{% endblock %}
