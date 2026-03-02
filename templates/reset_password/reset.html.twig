@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau mot de passe{% endblock %}
+
+{% block body %}
+    <div {{ react_component('ResetPasswordPage', {
+        errors: errors,
+        resetErrors: resetErrors,
+        csrfToken: csrf_token('change_password_form')
+    }) }}></div>
+{% endblock %}
