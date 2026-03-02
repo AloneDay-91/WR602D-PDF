@@ -55,6 +55,33 @@ function LabeledInput({ label, icon: Icon, id, error, ...props }) {
     );
 }
 
+function hexToHsl(hex) {
+    const r = parseInt(hex.slice(1,3),16)/255,
+          g = parseInt(hex.slice(3,5),16)/255,
+          b = parseInt(hex.slice(5,7),16)/255;
+    const max = Math.max(r,g,b), min = Math.min(r,g,b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        if (max === r)      h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        else if (max === g) h = ((b - r) / d + 2) / 6;
+        else                h = ((r - g) / d + 4) / 6;
+    }
+    return `${Math.round(h*360)} ${Math.round(s*100)}% ${Math.round(l*100)}%`;
+}
+
+function applyPrimaryColor(hex) {
+    if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
+    const hsl = hexToHsl(hex);
+    const l = parseFloat(hsl.split(" ")[2]);
+    const root = document.documentElement;
+    root.style.setProperty("--primary", hsl);
+    root.style.setProperty("--ring", hsl);
+    root.style.setProperty("--primary-foreground", l > 50 ? "0 0% 9%" : "0 0% 98%");
+}
+
 // ─── Onglet Profil ────────────────────────────────────────────────────────────
 function ProfileTab({ initialData, onUserUpdate }) {
     const [form, setForm] = useState({
@@ -92,6 +119,7 @@ function ProfileTab({ initialData, onUserUpdate }) {
                 setStatus("success");
                 setMessage(data.message);
                 onUserUpdate({ firstname: data.firstname, lastname: data.lastname, email: data.email });
+                applyPrimaryColor(form.favoriteColor);
             } else {
                 setErrors(data.errors ?? {});
                 setStatus("error");
