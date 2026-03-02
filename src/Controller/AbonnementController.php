@@ -2,9 +2,13 @@
 
 namespace App\Controller;
 
+use App\Entity\Plan;
 use App\Repository\PlanRepository;
 use App\Repository\ToolRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -47,9 +51,34 @@ final class AbonnementController extends AbstractController
             'slug' => $t->getSlug(),
         ], $allTools);
 
+        /** @var \App\Entity\User|null $user */
+        $user = $this->getUser();
+        $currentPlanId = $user?->getPlan()?->getId();
+
         return $this->render('abonnement/index.html.twig', [
             'plans' => $plansData,
             'tools' => $toolsData,
+            'currentPlanId' => $currentPlanId,
+        ]);
+    }
+
+    #[Route('/abonnement/select-plan/{id}', name: 'app_abonnement_select_plan', methods: ['POST'])]
+    public function selectPlan(Plan $plan, EntityManagerInterface $entityManager): JsonResponse
+    {
+        /** @var \App\Entity\User|null $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'Veuillez vous connecter pour choisir un plan'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user->setPlan($plan);
+        $entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Plan sélectionné avec succès !',
+            'planName' => $plan->getName()
         ]);
     }
 }
