@@ -24,3 +24,11 @@ services:
     App\Services\ApiGotenberg:
         arguments:
             $gotenbergUrl: '%env(API_URL_GOTENBERG)%'
+
+    App\EventListener\GenerationListener:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Controller\HistoriqueController:
+        arguments:
+            $projectDir: '%kernel.project_dir%'

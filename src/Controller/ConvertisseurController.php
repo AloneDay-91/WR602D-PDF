@@ -2,11 +2,14 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
+use App\Event\PdfGeneratedEvent;
 use App\Repository\ToolRepository;
 use App\Security\Voter\GenerationLimitVoter;
 use App\Security\Voter\ToolAccessVoter;
 use App\Services\ApiGotenberg;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -15,11 +18,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_USER')]
 final class ConvertisseurController extends AbstractController
 {
-    private ApiGotenberg $pdfService;
-
-    public function __construct(ApiGotenberg $pdfService)
-    {
-        $this->pdfService = $pdfService;
+    public function __construct(
+        private readonly ApiGotenberg             $pdfService,
+        private readonly EventDispatcherInterface $dispatcher,
+    ) {
     }
 
     #[Route('/convertisseur', name: 'app_convertisseur', methods: ['GET'])]
@@ -110,6 +112,9 @@ final class ConvertisseurController extends AbstractController
             return new Response('Veuillez fournir une URL ou un fichier HTML.', 400);
         }
 
+        $slug = $htmlFile ? 'html' : 'url';
+        $this->dispatchGeneration($slug, $pdfContent, 'converted.pdf', 'application/pdf');
+
         return $this->pdfResponse($pdfContent);
     }
 
@@ -135,6 +140,9 @@ final class ConvertisseurController extends AbstractController
             $file->getMimeType() ?? 'application/octet-stream'
         );
 
+        $slug = basename($request->getPathInfo());
+        $this->dispatchGeneration($slug, $pdfContent, 'converted.pdf', 'application/pdf');
+
         return $this->pdfResponse($pdfContent);
     }
 
@@ -158,6 +166,8 @@ final class ConvertisseurController extends AbstractController
         ], $files);
 
         $pdfContent = $this->pdfService->mergeFilesToPdf($filesData);
+
+        $this->dispatchGeneration('merge', $pdfContent, 'merged.pdf', 'application/pdf');
 
         return $this->pdfResponse($pdfContent, 'merged.pdf');
     }
@@ -184,6 +194,8 @@ final class ConvertisseurController extends AbstractController
             $splitMode,
             $splitSpan
         );
+
+        $this->dispatchGeneration('split', $pdfContent, 'split.zip', 'application/zip');
 
         return new Response($pdfContent, 200, [
             'Content-Type' => 'application/zip',
@@ -212,6 +224,8 @@ final class ConvertisseurController extends AbstractController
             $file->getMimeType() ?? 'application/pdf',
             $standard
         );
+
+        $this->dispatchGeneration('pdfa', $pdfContent, 'archived.pdf', 'application/pdf');
 
         return $this->pdfResponse($pdfContent, 'archived.pdf');
     }
@@ -244,7 +258,16 @@ final class ConvertisseurController extends AbstractController
             $ownerPassword
         );
 
+        $this->dispatchGeneration('encrypt', $pdfContent, 'encrypted.pdf', 'application/pdf');
+
         return $this->pdfResponse($pdfContent, 'encrypted.pdf');
+    }
+
+    private function dispatchGeneration(string $toolSlug, string $content, string $filename, string $mime): void
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $this->dispatcher->dispatch(new PdfGeneratedEvent($user, $toolSlug, $content, $filename, $mime));
     }
 
     private function pdfResponse(string $content, string $filename = 'converted.pdf'): Response

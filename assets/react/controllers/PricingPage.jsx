@@ -63,10 +63,10 @@ function PricingCard({ plan, allPlans, allTools, currentPlanId, onSelect, isLoad
                 <div className="pt-2">
                     {hasSpecial && (
                         <span className="text-lg text-muted-foreground line-through mr-2">
-                            {plan.price}&euro;
+                            {plan.price.toLocaleString("fr-FR")}&euro;
                         </span>
                     )}
-                    <span className="text-4xl font-bold">{price}</span>
+                    <span className="text-4xl font-bold">{price.toLocaleString("fr-FR")}</span>
                     <span className="text-muted-foreground text-sm">&euro; /mois</span>
                 </div>
             </CardHeader>

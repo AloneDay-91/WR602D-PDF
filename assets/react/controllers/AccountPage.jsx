@@ -356,7 +356,7 @@ function PlanTab({ plan }) {
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className="text-2xl font-bold">{plan.price}€</p>
+                        <p className="text-2xl font-bold">{plan.price.toLocaleString("fr-FR")}€</p>
                         <p className="text-xs text-muted-foreground">/ mois</p>
                     </div>
                 </div>

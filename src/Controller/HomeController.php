@@ -16,7 +16,18 @@ final class HomeController extends AbstractController
         $plans = $planRepository->findBy(['active' => true], ['price' => 'ASC']);
         $tools = $toolRepository->findBy(['isActive' => true]);
 
-        $plansData = array_map(function ($plan) {
+        $toolsByPlanId = [];
+        foreach ($tools as $tool) {
+            foreach ($tool->getPlans() as $plan) {
+                $toolsByPlanId[$plan->getId()][] = [
+                    'name' => $tool->getName(),
+                    'slug' => $tool->getSlug(),
+                    'icon' => $tool->getIcon(),
+                ];
+            }
+        }
+
+        $plansData = array_map(function ($plan) use ($toolsByPlanId) {
             return [
                 'id' => $plan->getId(),
                 'name' => $plan->getName(),
@@ -25,6 +36,7 @@ final class HomeController extends AbstractController
                 'specialPrice' => $plan->getSpecialPrice(),
                 'limitGeneration' => $plan->getLimitGeneration(),
                 'image' => $plan->getImage(),
+                'tools' => $toolsByPlanId[$plan->getId()] ?? [],
             ];
         }, $plans);
 

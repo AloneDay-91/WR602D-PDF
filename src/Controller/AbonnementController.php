@@ -46,13 +46,22 @@ final class AbonnementController extends AbstractController
             ];
         }, $plans);
 
-        $toolsData = array_map(fn($t) => [
-            'id' => $t->getId(),
-            'name' => $t->getName(),
-            'icon' => $t->getIcon(),
-            'description' => $t->getDescription(),
-            'slug' => $t->getSlug(),
-        ], $allTools);
+        $toolsData = array_map(function ($t) {
+            $minPlan = null;
+            foreach ($t->getPlans() as $plan) {
+                if ($minPlan === null || $plan->getPrice() < $minPlan->getPrice()) {
+                    $minPlan = $plan;
+                }
+            }
+            return [
+                'id'          => $t->getId(),
+                'name'        => $t->getName(),
+                'icon'        => $t->getIcon(),
+                'description' => $t->getDescription(),
+                'slug'        => $t->getSlug(),
+                'minPlan'     => $minPlan ? ['name' => $minPlan->getName(), 'price' => $minPlan->getPrice()] : null,
+            ];
+        }, $allTools);
 
         /** @var \App\Entity\User|null $user */
         $user = $this->getUser();
