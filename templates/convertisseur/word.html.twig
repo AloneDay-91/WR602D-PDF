@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}ZenPDF - {{ tool.name }}{% endblock %}
+
+{% block body %}
+    <div {{ react_component('LibreOfficePage', {
+        tool: tool,
+        allTools: allTools,
+        user: app.user ? { firstname: app.user.firstname, lastname: app.user.lastname, email: app.user.email, isBasic: is_granted('ROLE_BASIC'), isPremium: is_granted('ROLE_PREMIUM') } : null
+    }) }}>
+        Loading...
+    </div>
+{% endblock %}
