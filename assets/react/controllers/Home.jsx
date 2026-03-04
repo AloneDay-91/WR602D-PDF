@@ -9,8 +9,13 @@ export default function Home({ plans = [], tools = [] }) {
     return (
         <div className="bg-grid">
             <HeroSection />
+<<<<<<< Updated upstream
             <ToolsSection tools={tools} />
             <PricingSection plans={plans} />
+=======
+            <ToolsSection tools={tools} user={user} />
+            <PricingSection plans={plans} tools={tools} />
+>>>>>>> Stashed changes
             <FaqSection />
             <CtaSection />
         </div>

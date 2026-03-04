@@ -24,6 +24,15 @@ class Generation
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $storedFilename = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $originalFilename = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $mimeType = null;
+
     /**
      * @var Collection<int, UserContact>
      */
@@ -96,6 +105,42 @@ class Generation
     public function removeUserContact(UserContact $userContact): static
     {
         $this->userContacts->removeElement($userContact);
+
+        return $this;
+    }
+
+    public function getStoredFilename(): ?string
+    {
+        return $this->storedFilename;
+    }
+
+    public function setStoredFilename(?string $storedFilename): static
+    {
+        $this->storedFilename = $storedFilename;
+
+        return $this;
+    }
+
+    public function getOriginalFilename(): ?string
+    {
+        return $this->originalFilename;
+    }
+
+    public function setOriginalFilename(?string $originalFilename): static
+    {
+        $this->originalFilename = $originalFilename;
+
+        return $this;
+    }
+
+    public function getMimeType(): ?string
+    {
+        return $this->mimeType;
+    }
+
+    public function setMimeType(?string $mimeType): static
+    {
+        $this->mimeType = $mimeType;
 
         return $this;
     }

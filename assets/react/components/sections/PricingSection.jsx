@@ -5,17 +5,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "../ui/badge";
 import { cn } from "../../lib/utils";
 
-// Chaque feature a un seuil de prix minimum pour être incluse
-const features = [
-    { label: "Conversion HTML vers PDF", minPrice: 0 },
-    { label: "Conversion URL vers PDF", minPrice: 0 },
-    { label: "Conversion Image vers PDF", minPrice: 0 },
-    { label: "Conversion Markdown vers PDF", minPrice: 1 },
-    { label: "Taille max : 20 Mo", minPrice: 1 },
-    { label: "Fusion de PDF", minPrice: 10 },
-    { label: "Compression de PDF", minPrice: 10 },
-];
-
 function getDisplayPrice(plan) {
     if (plan.specialPrice != null && plan.specialPrice < plan.price) {
         return plan.specialPrice;
@@ -44,7 +33,7 @@ function FeatureItem({ included, label }) {
     );
 }
 
-export default function PricingSection({ plans = [] }) {
+export default function PricingSection({ plans = [], tools = [] }) {
     return (
         <section className="py-20 px-4">
             <div className="max-w-5xl mx-auto space-y-12">
@@ -64,6 +53,7 @@ export default function PricingSection({ plans = [] }) {
                         const popular = isPopular(plan, plans);
                         const price = getDisplayPrice(plan);
                         const hasSpecial = plan.specialPrice != null && plan.specialPrice < plan.price;
+                        const includedSlugs = new Set(plan.tools?.map((t) => t.slug) ?? []);
 
                         return (
                             <Card
@@ -82,10 +72,10 @@ export default function PricingSection({ plans = [] }) {
                                     <div className="pt-2">
                                         {hasSpecial && (
                                             <span className="text-lg text-muted-foreground line-through mr-2">
-                                                {plan.price}&euro;
+                                                {plan.price.toLocaleString("fr-FR")}&euro;
                                             </span>
                                         )}
-                                        <span className="text-4xl font-bold">{price}&euro;</span>
+                                        <span className="text-4xl font-bold">{price.toLocaleString("fr-FR")}&euro;</span>
                                         <span className="text-muted-foreground text-sm"> /mois</span>
                                     </div>
                                 </CardHeader>
@@ -103,11 +93,11 @@ export default function PricingSection({ plans = [] }) {
 
                                         <li className="border-t border-border my-2" />
 
-                                        {features.map((feature) => (
+                                        {tools.map((tool) => (
                                             <FeatureItem
-                                                key={feature.label}
-                                                included={plan.price >= feature.minPrice}
-                                                label={feature.label}
+                                                key={tool.slug}
+                                                included={includedSlugs.has(tool.slug)}
+                                                label={tool.name}
                                             />
                                         ))}
                                     </ul>

@@ -90,7 +90,7 @@ export default function Header({ tools = [] }) {
                             )}
 
                             <NavigationMenuItem>
-                                <NavigationMenuLink href="/history" className={navigationMenuTriggerStyle()}>
+                                <NavigationMenuLink href="/historique" className={navigationMenuTriggerStyle()}>
                                     Historique
                                 </NavigationMenuLink>
                             </NavigationMenuItem>
