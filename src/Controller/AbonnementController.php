@@ -10,7 +10,10 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Security\Voter\PlanSelectVoter;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class AbonnementController extends AbstractController
 {
@@ -62,18 +65,24 @@ final class AbonnementController extends AbstractController
         ]);
     }
 
+    #[IsGranted('ROLE_USER')]
     #[Route('/abonnement/select-plan/{id}', name: 'app_abonnement_select_plan', methods: ['POST'])]
-    public function selectPlan(Plan $plan, EntityManagerInterface $entityManager): JsonResponse
+    public function selectPlan(Plan $plan, EntityManagerInterface $entityManager, Security $security): JsonResponse
     {
-        /** @var \App\Entity\User|null $user */
+        $this->denyAccessUnlessGranted(PlanSelectVoter::SELECT, $plan);
+
+        /** @var \App\Entity\User $user */
         $user = $this->getUser();
 
-        if (!$user) {
-            return $this->json(['error' => 'Veuillez vous connecter pour choisir un plan'], Response::HTTP_UNAUTHORIZED);
-        }
-
         $user->setPlan($plan);
+
+        $planRole = $plan->getRole();
+        $user->setRoles($planRole ? [$planRole] : []);
+
         $entityManager->flush();
+
+        // Rafraîchit le token de sécurité pour appliquer les nouveaux rôles immédiatement
+        $security->login($user, 'form_login', 'main');
 
         return $this->json([
             'success' => true,

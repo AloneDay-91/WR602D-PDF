@@ -11,7 +11,7 @@ export default function PageLayout({ title = "ZenPDF", plans = [], tools = [], u
                 <Header tools={tools} user={user} />
 
                 <main className="flex-1">
-                    <Home plans={plans} tools={tools} />
+                    <Home plans={plans} tools={tools} user={user} />
                 </main>
 
                 <Footer/>

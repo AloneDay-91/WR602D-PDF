@@ -1,7 +1,9 @@
 import React from "react";
-import { icons } from "lucide-react";
+import { icons, Lock } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
+import { hasToolAccess } from "../../lib/access";
+import { cn } from "../../lib/utils";
 
 function getIcon(iconName) {
     return icons[iconName] || icons.Wrench;
@@ -13,7 +15,7 @@ const planBadgeVariant = {
     PREMIUM: "default",
 };
 
-export default function ToolsSection({ tools = [] }) {
+export default function ToolsSection({ tools = [], user = null }) {
     if (tools.length === 0) return null;
 
     return (
@@ -31,26 +33,53 @@ export default function ToolsSection({ tools = [] }) {
                         const Icon = getIcon(tool.icon);
                         const planName = tool.minPlan?.name;
                         const variant = planBadgeVariant[planName] ?? "outline";
-                        return (
-                            <a href={`/convertisseur/${tool.slug}`} className="group">
-                                <Card
-                                    key={tool.id}
-                                    className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30 shadow-none"
-                                >
-                                    <CardHeader className="space-y-3">
-                                        <div className="flex items-start justify-between">
-                                            <div className="rounded-lg bg-secondary p-2.5 w-fit group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                                <Icon className="h-5 w-5 text-primary hover:text-primary-foreground transition-colors group-hover:text-primary-foreground" />
-                                            </div>
-                                            {planName && (
-                                                <Badge variant={variant}>{planName}</Badge>
+                        const accessible = hasToolAccess(user, tool);
+
+                        const cardContent = (
+                            <Card className={cn(
+                                "transition-all shadow-none",
+                                accessible
+                                    ? "group cursor-pointer hover:shadow-md hover:border-primary/30"
+                                    : "opacity-60 grayscale cursor-not-allowed"
+                            )}>
+                                <CardHeader className="space-y-3">
+                                    <div className="flex items-start justify-between">
+                                        <div className={cn(
+                                            "rounded-lg bg-secondary p-2.5 w-fit transition-colors relative",
+                                            accessible && "group-hover:bg-primary group-hover:text-primary-foreground"
+                                        )}>
+                                            {accessible ? (
+                                                <Icon className="h-5 w-5 text-primary transition-colors group-hover:text-primary-foreground" />
+                                            ) : (
+                                                <Lock className="h-5 w-5 text-muted-foreground" />
                                             )}
                                         </div>
-                                        <CardTitle className="text-base">{tool.name}</CardTitle>
-                                        <CardDescription>{tool.description}</CardDescription>
-                                    </CardHeader>
-                                </Card>
+                                        {planName && (
+                                            <Badge variant={variant}>{planName}</Badge>
+                                        )}
+                                    </div>
+                                    <CardTitle className="text-base">{tool.name}</CardTitle>
+                                    <CardDescription>{tool.description}</CardDescription>
+                                    {!accessible && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Nécessite un abonnement{" "}
+                                            <a href="/abonnement" className="underline hover:text-foreground">
+                                                {planName}
+                                            </a>
+                                        </p>
+                                    )}
+                                </CardHeader>
+                            </Card>
+                        );
+
+                        return accessible ? (
+                            <a key={tool.id} href={`/convertisseur/${tool.slug}`} className="group">
+                                {cardContent}
                             </a>
+                        ) : (
+                            <div key={tool.id}>
+                                {cardContent}
+                            </div>
                         );
                     })}
                 </div>
