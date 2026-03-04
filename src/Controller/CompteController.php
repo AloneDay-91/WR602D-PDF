@@ -12,14 +12,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/compte')]
+#[IsGranted('ROLE_USER')]
 final class CompteController extends AbstractController
 {
     #[Route('', name: 'app_compte')]
     public function index(ToolRepository $toolRepository): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_USER');
 
         /** @var User $user */
         $user = $this->getUser();
@@ -59,8 +60,6 @@ final class CompteController extends AbstractController
         EntityManagerInterface $em,
         UserRepository $userRepository,
     ): JsonResponse {
-        $this->denyAccessUnlessGranted('ROLE_USER');
-
         /** @var User $user */
         $user = $this->getUser();
         $data = json_decode($request->getContent(), true);
@@ -119,8 +118,6 @@ final class CompteController extends AbstractController
         EntityManagerInterface $em,
         UserPasswordHasherInterface $hasher,
     ): JsonResponse {
-        $this->denyAccessUnlessGranted('ROLE_USER');
-
         /** @var User $user */
         $user = $this->getUser();
         $data = json_decode($request->getContent(), true);

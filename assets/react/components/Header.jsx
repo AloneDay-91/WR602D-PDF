@@ -1,5 +1,6 @@
 import React from 'react';
-import { icons, User, LogOut, Settings } from 'lucide-react';
+import { icons, User, LogOut, Settings, Lock } from 'lucide-react';
+import { hasToolAccess } from '../lib/access';
 import { Button } from './ui/button';
 import { ModeToggle } from './ModeToggle';
 import { useTheme } from './ThemeProvider';
@@ -26,7 +27,26 @@ function getIcon(iconName) {
     return icons[iconName] || icons.Wrench;
 }
 
-function ListItem({ className, title, icon: Icon, children, href, ...props }) {
+function ListItem({ className, title, icon: Icon, children, href, locked = false, ...props }) {
+    if (locked) {
+        return (
+            <li>
+                <div className={cn(
+                    "block select-none space-y-1 rounded-md p-3 leading-none opacity-50 cursor-not-allowed",
+                    className
+                )}>
+                    <div className="flex items-center gap-2">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <div className="text-sm font-medium leading-none">{title}</div>
+                    </div>
+                    <p className="line-clamp-2 text-xs leading-snug text-muted-foreground mt-1">
+                        {children}
+                    </p>
+                </div>
+            </li>
+        );
+    }
+
     return (
         <li>
             <NavigationMenuLink asChild>
@@ -60,7 +80,7 @@ function UserAvatar({ firstname, lastname }) {
     );
 }
 
-export default function Header({ tools = [], user = null }) {
+export default function Header({ tools = [], user = null, userRoles = null }) {
     const { theme } = useTheme();
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const logoSrc = isDark ? '/images/logo-icon-dark.png' : '/images/logo-icon.png';
@@ -90,12 +110,14 @@ export default function Header({ tools = [], user = null }) {
                                         <ul className="grid w-[400px] gap-1 p-3 md:w-[500px] md:grid-cols-2">
                                             {tools.map((tool) => {
                                                 const Icon = getIcon(tool.icon);
+                                                const accessible = hasToolAccess(user, tool);
                                                 return (
                                                     <ListItem
                                                         key={tool.id}
                                                         title={tool.name}
                                                         icon={Icon}
                                                         href={`/convertisseur/${tool.slug}`}
+                                                        locked={!accessible}
                                                     >
                                                         {tool.description}
                                                     </ListItem>

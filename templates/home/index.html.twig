@@ -6,7 +6,7 @@
     <div {{ react_component('PageLayout', {
         plans: plans,
         tools: tools,
-        user: app.user ? { firstname: app.user.firstname, lastname: app.user.lastname, email: app.user.email } : null
+        user: app.user ? { firstname: app.user.firstname, lastname: app.user.lastname, email: app.user.email, isBasic: is_granted('ROLE_BASIC'), isPremium: is_granted('ROLE_PREMIUM') } : null
     }) }}>
         Loading...
     </div>
