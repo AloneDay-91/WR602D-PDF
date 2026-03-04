@@ -16,8 +16,6 @@ class GenerationRepository extends ServiceEntityRepository
         parent::__construct($registry, Generation::class);
     }
 
-<<<<<<< Updated upstream
-=======
     /**
      * @return Generation[]
      */
@@ -40,8 +38,7 @@ class GenerationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
-
->>>>>>> Stashed changes
+    
     //    /**
     //     * @return Generation[] Returns an array of Generation objects
     //     */

@@ -3,16 +3,12 @@
 {% block title %}ZenPDF - Formules & Tarifs{% endblock %}
 
 {% block body %}
-<<<<<<< Updated upstream
-    <div {{ react_component('PricingPage', { plans: plans, tools: tools }) }}>
-=======
     <div {{ react_component('PricingPage', {
         plans: plans,
         tools: tools,
         user: app.user ? { firstname: app.user.firstname, lastname: app.user.lastname, email: app.user.email, isBasic: is_granted('ROLE_BASIC'), isPremium: is_granted('ROLE_PREMIUM') } : null,
         currentPlanId: currentPlanId
     }) }}>
->>>>>>> Stashed changes
         Loading...
     </div>
 {% endblock %}

@@ -2,23 +2,20 @@
 
 namespace App\Controller;
 
-<<<<<<< Updated upstream
-=======
 use App\Entity\User;
 use App\Event\PdfGeneratedEvent;
 use App\Repository\ToolRepository;
 use App\Security\Voter\GenerationLimitVoter;
 use App\Security\Voter\ToolAccessVoter;
 use App\Services\ApiGotenberg;
->>>>>>> Stashed changes
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Services\ApiGotenberg;
-use App\Repository\ToolRepository;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('ROLE_USER')]
 final class ConvertisseurController extends AbstractController
 {
     public function __construct(
@@ -39,8 +36,27 @@ final class ConvertisseurController extends AbstractController
         ]);
     }
 
+    #[IsGranted('ROLE_USER')]
+    #[Route('/convertisseur/url', name: 'app_convertisseur_url', methods: ['GET'])]
+    public function showUrl(ToolRepository $toolRepository): Response
+    {
+        return $this->showTool('url', $toolRepository);
+    }
+
+    #[IsGranted('ROLE_BASIC')]
+    #[Route('/convertisseur/html', name: 'app_convertisseur_html', methods: ['GET'])]
+    public function showHtml(ToolRepository $toolRepository): Response
+    {
+        return $this->showTool('html', $toolRepository);
+    }
+
     #[Route('/convertisseur/{slug}', name: 'app_convertisseur_tool', methods: ['GET'])]
     public function show(string $slug, ToolRepository $toolRepository): Response
+    {
+        return $this->showTool($slug, $toolRepository);
+    }
+
+    private function showTool(string $slug, ToolRepository $toolRepository): Response
     {
         $tool = $toolRepository->findOneBy(['slug' => $slug, 'isActive' => true]);
 
@@ -48,9 +64,11 @@ final class ConvertisseurController extends AbstractController
             throw $this->createNotFoundException('Outil introuvable.');
         }
 
+        $this->denyAccessUnlessGranted(ToolAccessVoter::ACCESS, $tool);
+
         $allTools = $toolRepository->findBy(['isActive' => true]);
 
-        return $this->render("convertisseur/{$slug}.html.twig", [
+        return $this->render("convertisseur/$slug.html.twig", [
             'tool' => $this->formatTool($tool),
             'allTools' => array_map(fn($t) => $this->formatTool($t), $allTools),
         ]);
@@ -76,9 +94,12 @@ final class ConvertisseurController extends AbstractController
         ];
     }
 
+    #[IsGranted('ROLE_BASIC')]
     #[Route('/convertisseur', name: 'app_convertisseur_post', methods: ['POST'])]
     public function convert(Request $request): Response
     {
+        $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
+
         $url = $request->request->get('url');
         $htmlFile = $request->files->get('htmlFile');
 
@@ -91,9 +112,6 @@ final class ConvertisseurController extends AbstractController
             return new Response('Veuillez fournir une URL ou un fichier HTML.', 400);
         }
 
-<<<<<<< Updated upstream
-        return new Response($pdfContent, 200, [
-=======
         $slug = $htmlFile ? 'html' : 'url';
         $this->dispatchGeneration($slug, $pdfContent, 'converted.pdf', 'application/pdf');
 
@@ -255,9 +273,8 @@ final class ConvertisseurController extends AbstractController
     private function pdfResponse(string $content, string $filename = 'converted.pdf'): Response
     {
         return new Response($content, 200, [
->>>>>>> Stashed changes
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="converted.pdf"',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
         ]);
     }
 }
