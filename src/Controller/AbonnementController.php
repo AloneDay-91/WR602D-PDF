@@ -2,11 +2,18 @@
 
 namespace App\Controller;
 
+use App\Entity\Plan;
 use App\Repository\PlanRepository;
 use App\Repository\ToolRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Security\Voter\PlanSelectVoter;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class AbonnementController extends AbstractController
 {
@@ -56,9 +63,40 @@ final class AbonnementController extends AbstractController
             ];
         }, $allTools);
 
+        /** @var \App\Entity\User|null $user */
+        $user = $this->getUser();
+        $currentPlanId = $user?->getPlan()?->getId();
+
         return $this->render('abonnement/index.html.twig', [
             'plans' => $plansData,
             'tools' => $toolsData,
+            'currentPlanId' => $currentPlanId,
+        ]);
+    }
+
+    #[IsGranted('ROLE_USER')]
+    #[Route('/abonnement/select-plan/{id}', name: 'app_abonnement_select_plan', methods: ['POST'])]
+    public function selectPlan(Plan $plan, EntityManagerInterface $entityManager, Security $security): JsonResponse
+    {
+        $this->denyAccessUnlessGranted(PlanSelectVoter::SELECT, $plan);
+
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+
+        $user->setPlan($plan);
+
+        $planRole = $plan->getRole();
+        $user->setRoles($planRole ? [$planRole] : []);
+
+        $entityManager->flush();
+
+        // Rafraîchit le token de sécurité pour appliquer les nouveaux rôles immédiatement
+        $security->login($user, 'form_login', 'main');
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Plan sélectionné avec succès !',
+            'planName' => $plan->getName()
         ]);
     }
 }

@@ -1,0 +1,196 @@
+import React, { useState, useRef } from "react";
+import { icons, FileText, FileDown, Upload, X, ArrowLeft, Zap, Scissors, LockKeyhole } from "lucide-react";
+import { ThemeProvider } from "../components/ThemeProvider";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { cn } from "../lib/utils";
+import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "../components/ui/item";
+
+function getIcon(iconName) {
+    return icons[iconName] || icons.Wrench;
+}
+
+export default function SplitPage({ tool, allTools = [], user = null }) {
+    const [file, setFile] = useState(null);
+    const [dragActive, setDragActive] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [splitMode, setSplitMode] = useState("intervals");
+    const [splitSpan, setSplitSpan] = useState("1");
+    const fileInputRef = useRef(null);
+
+    const Icon = getIcon(tool.icon);
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+        else if (e.type === "dragleave") setDragActive(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]);
+    };
+
+    const removeFile = () => {
+        setFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!file) return;
+        setLoading(true);
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("splitMode", splitMode);
+        formData.append("splitSpan", splitSpan);
+
+        try {
+            const response = await fetch("/convertisseur/split", { method: "POST", body: formData });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = blobUrl;
+                link.download = "split.zip";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+            } else {
+                alert((await response.text()) || "Une erreur est survenue.");
+            }
+        } catch {
+            alert("Erreur de connexion. Veuillez réessayer.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <ThemeProvider defaultTheme="system" storageKey="zenpdf-theme">
+            <div className="min-h-screen flex flex-col bg-background text-foreground">
+                <Header tools={allTools} user={user} />
+
+                <main className="flex-1 py-20 px-4">
+                    <div className="max-w-3xl mx-auto space-y-8">
+                        <a href="/convertisseur" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                            <ArrowLeft className="h-4 w-4" />
+                            Retour aux outils
+                        </a>
+
+                        <div className="flex items-start gap-4">
+                            <div className="rounded-xl bg-secondary text-primary p-3 shrink-0">
+                                <Icon className="h-7 w-7" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <h1 className="text-2xl font-semibold">{tool.name}</h1>
+                                <p className="text-muted-foreground">{tool.description}</p>
+                            </div>
+                        </div>
+
+                        <Card className="p-6 shadow-none">
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Fichier PDF</label>
+                                    <div
+                                        className={cn(
+                                            "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
+                                            dragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                                        )}
+                                        onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <input ref={fileInputRef} type="file" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="hidden" />
+                                        {file ? (
+                                            <div className="flex items-center justify-center gap-3">
+                                                <FileText className="h-8 w-8 text-primary" />
+                                                <div className="text-left">
+                                                    <p className="text-sm font-medium">{file.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} Ko</p>
+                                                </div>
+                                                <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeFile(); }}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
+                                                <p className="text-sm text-muted-foreground">Glissez-déposez votre PDF ici, ou <span className="text-primary font-medium">parcourez</span></p>
+                                                <p className="text-xs text-muted-foreground">Fichiers PDF uniquement</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Mode de découpe</label>
+                                        <select
+                                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                            value={splitMode}
+                                            onChange={(e) => setSplitMode(e.target.value)}
+                                        >
+                                            <option value="intervals">Par intervalles</option>
+                                            <option value="pages">Par pages</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">
+                                            {splitMode === "intervals" ? "Intervalle (ex: 1)" : "Pages (ex: 1-3)"}
+                                        </label>
+                                        <Input
+                                            value={splitSpan}
+                                            onChange={(e) => setSplitSpan(e.target.value)}
+                                            placeholder={splitMode === "intervals" ? "1" : "1-3"}
+                                        />
+                                    </div>
+                                </div>
+
+                                <Button type="submit" size="lg" className="w-full" disabled={loading || !file}>
+                                    {loading ? (
+                                        <span className="flex items-center gap-2">
+                                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                            Découpe en cours...
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-2">
+                                            <FileDown className="h-4 w-4" />
+                                            Découper le PDF
+                                        </span>
+                                    )}
+                                </Button>
+                                <p className="text-xs text-center text-muted-foreground">Le résultat sera téléchargé dans un fichier .zip</p>
+                            </form>
+                        </Card>
+
+                        <div className="grid grid-cols-1 gap-4 mt-6 sm:grid-cols-3">
+                            <Item variant="outline">
+                                <ItemMedia variant="icon" className="text-primary"><Zap className="h-4 w-4" /></ItemMedia>
+                                <ItemContent><ItemTitle>Rapide</ItemTitle><ItemDescription>Découpe en quelques secondes</ItemDescription></ItemContent>
+                            </Item>
+                            <Item variant="outline">
+                                <ItemMedia variant="icon" className="text-primary"><Scissors className="h-4 w-4" /></ItemMedia>
+                                <ItemContent><ItemTitle>Précis</ItemTitle><ItemDescription>Par intervalles ou plages de pages</ItemDescription></ItemContent>
+                            </Item>
+                            <Item variant="outline">
+                                <ItemMedia variant="icon" className="text-primary"><LockKeyhole className="h-4 w-4" /></ItemMedia>
+                                <ItemContent><ItemTitle>Sécurisé</ItemTitle><ItemDescription>Vos fichiers ne sont pas conservés</ItemDescription></ItemContent>
+                            </Item>
+                        </div>
+                    </div>
+                </main>
+
+                <Footer />
+            </div>
+        </ThemeProvider>
+    );
+}

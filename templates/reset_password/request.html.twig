@@ -1,0 +1,10 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mot de passe oublié{% endblock %}
+
+{% block body %}
+    <div {{ react_component('ForgotPasswordPage', {
+        errors: errors|merge(app.flashes('reset_password_error')),
+        csrfToken: csrf_token('reset_password_request_form')
+    }) }}></div>
+{% endblock %}

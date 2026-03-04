@@ -19,6 +19,14 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                enable_csrf: true
+            logout:
+                path: app_logout
+                # where to redirect after logout
+                # target: app_any_route
 
             # Activate different ways to authenticate:
             # https://symfony.com/doc/current/security.html#the-firewall
@@ -26,10 +34,32 @@ security:
             # https://symfony.com/doc/current/security/impersonating_user.html
             # switch_user: true
 
+    role_hierarchy:
+        ROLE_BASIC:       ROLE_USER
+        ROLE_PREMIUM:     ROLE_BASIC
+        ROLE_ADMIN:       ROLE_PREMIUM
+        ROLE_SUPER_ADMIN: [ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH]
+
     # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # Routes publiques
+        - { path: ^/login,          roles: PUBLIC_ACCESS }
+        - { path: ^/logout,         roles: PUBLIC_ACCESS }
+        - { path: ^/register,       roles: PUBLIC_ACCESS }
+        - { path: ^/verify/email,   roles: PUBLIC_ACCESS }
+        - { path: ^/reset-password, roles: PUBLIC_ACCESS }
+        - { path: ^/contact,        roles: PUBLIC_ACCESS }
+        - { path: ^/abonnement$,    roles: PUBLIC_ACCESS }
+        - { path: ^/$,              roles: PUBLIC_ACCESS }
+        - { path: ^/convertisseur/url,             roles: ROLE_USER }
+
+        # Routes nécessitant un compte (sans plan obligatoire)
+        - { path: ^/abonnement/select-plan, roles: ROLE_USER }
+        - { path: ^/compte,                 roles: ROLE_USER }
+        - { path: ^/historique,             roles: ROLE_USER }
+
+        # Routes nécessitant au minimum ROLE_BASIC (abonné)
+        - { path: ^/convertisseur/html,          roles: ROLE_BASIC }
 
 when@test:
     security:

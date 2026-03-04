@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Generation;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -38,7 +39,8 @@ class GenerationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
-    
+
+
     //    /**
     //     * @return Generation[] Returns an array of Generation objects
     //     */

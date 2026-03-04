@@ -18,7 +18,7 @@ const planBadgeVariant = {
     PREMIUM: "default",
 };
 
-export default function UrlPage({ tool, allTools = [] }) {
+export default function UrlPage({ tool, allTools = [], user = null }) {
     const [url, setUrl] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -63,7 +63,7 @@ export default function UrlPage({ tool, allTools = [] }) {
     return (
         <ThemeProvider defaultTheme="system" storageKey="zenpdf-theme">
             <div className="min-h-screen flex flex-col bg-background text-foreground">
-                <Header tools={allTools} />
+                <Header tools={allTools} user={user} />
 
                 <main className="flex-1 py-20 px-4">
                     <div className="max-w-3xl mx-auto space-y-8">
