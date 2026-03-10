@@ -327,7 +327,7 @@ function SecurityTab() {
 }
 
 // ─── Onglet Abonnement ────────────────────────────────────────────────────────
-function PlanTab({ plan }) {
+function PlanTab({ plan, generationsToday = 0 }) {
     if (!plan) {
         return (
             <Card>
@@ -337,6 +337,13 @@ function PlanTab({ plan }) {
             </Card>
         );
     }
+
+    const isUnlimited = plan.limitGeneration <= 0;
+    const used = generationsToday;
+    const limit = plan.limitGeneration;
+    const percent = isUnlimited ? 0 : Math.min(100, Math.round((used / limit) * 100));
+    const remaining = isUnlimited ? null : limit - used;
+    const isFull = !isUnlimited && used >= limit;
 
     return (
         <Card>
@@ -361,22 +368,42 @@ function PlanTab({ plan }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="flex items-center gap-3 p-3 rounded-md border border-border">
-                        <Zap className="h-4 w-4 text-primary shrink-0" />
-                        <div>
-                            <p className="text-xs text-muted-foreground">Conversions</p>
-                            <p className="text-sm font-medium">
-                                {plan.limitGeneration === -1 ? "Illimitées" : `${plan.limitGeneration} / jour`}
-                            </p>
+                {/* Compteur journalier */}
+                <div className="space-y-2 p-4 rounded-lg border border-border">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Zap className="h-4 w-4 text-primary shrink-0" />
+                            <span className="text-sm font-medium">Conversions aujourd'hui</span>
                         </div>
+                        <span className={`text-sm font-semibold ${isFull ? "text-red-500" : "text-foreground"}`}>
+                            {isUnlimited ? `${used} / ∞` : `${used} / ${limit}`}
+                        </span>
                     </div>
-                    <div className="flex items-center gap-3 p-3 rounded-md border border-border">
-                        <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                        <div>
-                            <p className="text-xs text-muted-foreground">Statut</p>
-                            <p className="text-sm font-medium text-green-600 dark:text-green-400">Actif</p>
-                        </div>
+                    {!isUnlimited && (
+                        <>
+                            <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                                <div
+                                    className={`h-full rounded-full transition-all ${isFull ? "bg-red-500" : percent >= 80 ? "bg-orange-500" : "bg-primary"}`}
+                                    style={{ width: `${percent}%` }}
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {isFull
+                                    ? "Limite atteinte — réinitialisée demain à minuit."
+                                    : `Il vous reste ${remaining} conversion${remaining > 1 ? "s" : ""} aujourd'hui.`}
+                            </p>
+                        </>
+                    )}
+                    {isUnlimited && (
+                        <p className="text-xs text-muted-foreground">Conversions illimitées.</p>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-md border border-border">
+                    <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                    <div>
+                        <p className="text-xs text-muted-foreground">Statut</p>
+                        <p className="text-sm font-medium text-green-600 dark:text-green-400">Actif</p>
                     </div>
                 </div>
 
@@ -393,9 +420,11 @@ function PlanTab({ plan }) {
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function AccountPage({ userData = {}, tools = [] }) {
     const [user, setUser] = useState({
-        firstname: userData.firstname,
-        lastname:  userData.lastname,
-        email:     userData.email,
+        firstname:        userData.firstname,
+        lastname:         userData.lastname,
+        email:            userData.email,
+        generationsToday: userData.generationsToday ?? 0,
+        limitGeneration:  userData.plan?.limitGeneration ?? 0,
     });
 
     const handleUserUpdate = (updated) => setUser((u) => ({ ...u, ...updated }));
@@ -436,7 +465,7 @@ export default function AccountPage({ userData = {}, tools = [] }) {
                             </TabsContent>
 
                             <TabsContent value="plan" className="mt-6">
-                                <PlanTab plan={userData.plan} />
+                                <PlanTab plan={userData.plan} generationsToday={userData.generationsToday ?? 0} />
                             </TabsContent>
                         </Tabs>
                     </div>

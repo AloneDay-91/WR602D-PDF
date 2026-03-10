@@ -1,5 +1,5 @@
 import React from 'react';
-import { icons, User, LogOut, Settings, Lock } from 'lucide-react';
+import { icons, User, LogOut, Settings, Lock, Zap } from 'lucide-react';
 import { hasToolAccess } from '../lib/access';
 import { Button } from './ui/button';
 import { ModeToggle } from './ModeToggle';
@@ -167,6 +167,25 @@ export default function Header({ tools = [], user = null, userRoles = null }) {
                                 <DropdownMenuLabel>
                                     <p className="font-medium text-foreground">{user.firstname} {user.lastname}</p>
                                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                                    {user.limitGeneration > 0 && (
+                                        <div className="mt-2 space-y-1">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="flex items-center gap-1 text-muted-foreground">
+                                                    <Zap className="h-3 w-3" />
+                                                    Conversions aujourd'hui
+                                                </span>
+                                                <span className={`font-semibold ${user.generationsToday >= user.limitGeneration ? "text-red-500" : "text-foreground"}`}>
+                                                    {user.generationsToday}/{user.limitGeneration}
+                                                </span>
+                                            </div>
+                                            <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all ${user.generationsToday >= user.limitGeneration ? "bg-red-500" : user.generationsToday / user.limitGeneration >= 0.8 ? "bg-orange-500" : "bg-primary"}`}
+                                                    style={{ width: `${Math.min(100, Math.round((user.generationsToday / user.limitGeneration) * 100))}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem asChild>
