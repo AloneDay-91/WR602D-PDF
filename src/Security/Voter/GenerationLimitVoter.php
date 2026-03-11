@@ -41,7 +41,7 @@ class GenerationLimitVoter extends Voter
             return true;
         }
 
-        $count = $this->generationRepository->countByUser($user);
+        $count = $this->generationRepository->countByUserToday($user);
 
         return $count < $limit;
     }

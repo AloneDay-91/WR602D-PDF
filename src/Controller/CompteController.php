@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Repository\GenerationRepository;
 use App\Repository\ToolRepository;
 use App\Repository\UserRepository;
+use App\Service\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -19,7 +21,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class CompteController extends AbstractController
 {
     #[Route('', name: 'app_compte')]
-    public function index(ToolRepository $toolRepository): Response
+    public function index(ToolRepository $toolRepository, GenerationRepository $generationRepository, StripeService $stripeService): Response
     {
 
         /** @var User $user */
@@ -34,22 +36,27 @@ final class CompteController extends AbstractController
         ], $toolRepository->findBy(['isActive' => true]));
 
         $plan = $user->getPlan();
+        $generationsToday = $generationRepository->countByUserToday($user);
+        $invoices = $stripeService->getInvoices($user);
 
         return $this->render('compte/index.html.twig', [
             'tools'    => $toolsData,
             'userData' => [
-                'firstname'     => $user->getFirstname(),
-                'lastname'      => $user->getLastname(),
-                'email'         => $user->getEmail(),
-                'phone'         => $user->getPhone(),
-                'dob'           => $user->getDob()?->format('Y-m-d'),
-                'favoriteColor' => $user->getFavoriteColor(),
-                'plan'          => $plan ? [
+                'firstname'         => $user->getFirstname(),
+                'lastname'          => $user->getLastname(),
+                'email'             => $user->getEmail(),
+                'phone'             => $user->getPhone(),
+                'dob'               => $user->getDob()?->format('Y-m-d'),
+                'favoriteColor'     => $user->getFavoriteColor(),
+                'generationsToday'  => $generationsToday,
+                'plan'              => $plan ? [
                     'name'            => $plan->getName(),
                     'limitGeneration' => $plan->getLimitGeneration(),
                     'price'           => $plan->getPrice(),
                     'description'     => $plan->getDescription(),
                 ] : null,
+                'invoices'          => $invoices,
+                'hasStripeCustomer' => (bool) $user->getStripeCustomerId(),
             ],
         ]);
     }

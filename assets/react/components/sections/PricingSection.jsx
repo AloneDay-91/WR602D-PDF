@@ -33,7 +33,7 @@ function FeatureItem({ included, label }) {
     );
 }
 
-export default function PricingSection({ plans = [], tools = [] }) {
+export default function PricingSection({ plans = [], tools = [], user = null }) {
     return (
         <section className="py-20 px-4">
             <div className="max-w-5xl mx-auto space-y-12">
@@ -107,8 +107,17 @@ export default function PricingSection({ plans = [], tools = [] }) {
                                     <Button
                                         variant={popular ? "default" : "outline"}
                                         className="w-full"
+                                        asChild
                                     >
-                                        {price === 0 ? "Commencer" : "Choisir ce plan"}
+                                        <a href={
+                                            !user
+                                                ? "/login"
+                                                : price === 0
+                                                    ? "/abonnement"
+                                                    : `/abonnement/checkout/${plan.id}`
+                                        }>
+                                            {!user ? "Se connecter" : (price === 0 ? "Commencer" : "S'abonner")}
+                                        </a>
                                     </Button>
                                 </CardFooter>
                             </Card>
