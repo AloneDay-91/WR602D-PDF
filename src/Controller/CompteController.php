@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Repository\GenerationRepository;
 use App\Repository\ToolRepository;
 use App\Repository\UserRepository;
+use App\Service\StripeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,7 +21,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class CompteController extends AbstractController
 {
     #[Route('', name: 'app_compte')]
-    public function index(ToolRepository $toolRepository, GenerationRepository $generationRepository): Response
+    public function index(ToolRepository $toolRepository, GenerationRepository $generationRepository, StripeService $stripeService): Response
     {
 
         /** @var User $user */
@@ -36,6 +37,7 @@ final class CompteController extends AbstractController
 
         $plan = $user->getPlan();
         $generationsToday = $generationRepository->countByUserToday($user);
+        $invoices = $stripeService->getInvoices($user);
 
         return $this->render('compte/index.html.twig', [
             'tools'    => $toolsData,
@@ -53,6 +55,8 @@ final class CompteController extends AbstractController
                     'price'           => $plan->getPrice(),
                     'description'     => $plan->getDescription(),
                 ] : null,
+                'invoices'          => $invoices,
+                'hasStripeCustomer' => (bool) $user->getStripeCustomerId(),
             ],
         ]);
     }

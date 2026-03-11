@@ -115,7 +115,7 @@ function PricingCard({ plan, allPlans, allTools, currentPlanId, onSelect, isLoad
                     ) : null}
                     {isCurrentPlan
                         ? "Formule actuelle"
-                        : (!isLoggedIn ? "Se connecter" : (price === 0 ? "Commencer gratuitement" : "Choisir ce plan"))}
+                        : (!isLoggedIn ? "Se connecter" : (price === 0 ? "Commencer gratuitement" : "S'abonner"))}
                 </Button>
             </CardFooter>
         </Card>
@@ -134,6 +134,13 @@ export default function PricingPage({ plans = [], tools = [], user = null, curre
             return;
         }
 
+        // Plan payant → redirection vers Stripe Checkout
+        if (plan.price > 0) {
+            window.location.href = `/abonnement/checkout/${plan.id}`;
+            return;
+        }
+
+        // Plan gratuit → sélection directe
         setLoadingPlanId(plan.id);
         setStatus(null);
 

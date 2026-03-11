@@ -10,7 +10,7 @@ export default function Home({ plans = [], tools = [], user = null }) {
         <div className="bg-grid">
             <HeroSection />
             <ToolsSection tools={tools} user={user} />
-            <PricingSection plans={plans} tools={tools} />
+            <PricingSection plans={plans} tools={tools} user={user} />
             <FaqSection />
             <CtaSection />
         </div>

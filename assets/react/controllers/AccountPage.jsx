@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs"
 import {
     User, Mail, Phone, Calendar, Palette, Lock, Eye, EyeOff,
     CheckCircle, XCircle, Zap, CreditCard, ShieldCheck,
+    FileText, Download, ExternalLink, Settings2,
 } from "lucide-react";
 
 function Alert({ variant, children }) {
@@ -326,8 +327,24 @@ function SecurityTab() {
     );
 }
 
+// ─── Statut badge facture ─────────────────────────────────────────────────────
+function InvoiceStatusBadge({ status }) {
+    const map = {
+        paid:           { label: "Payée",     className: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" },
+        open:           { label: "En attente", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400" },
+        void:           { label: "Annulée",   className: "bg-muted text-muted-foreground" },
+        uncollectible:  { label: "Impayée",   className: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400" },
+    };
+    const s = map[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
+    return (
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${s.className}`}>
+            {s.label}
+        </span>
+    );
+}
+
 // ─── Onglet Abonnement ────────────────────────────────────────────────────────
-function PlanTab({ plan, generationsToday = 0 }) {
+function PlanTab({ plan, generationsToday = 0, invoices = [], hasStripeCustomer = false }) {
     if (!plan) {
         return (
             <Card>
@@ -352,6 +369,20 @@ function PlanTab({ plan, generationsToday = 0 }) {
                 <CardDescription>Votre formule actuelle.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+                {/* Boutons d'action */}
+                <div className="flex flex-col sm:flex-row gap-2 justify-end">
+                    {hasStripeCustomer && (
+                        <Button variant="destructive" size="sm" asChild>
+                            <a href="/abonnement/portal">
+                                <Settings2 className="mr-2 h-4 w-4" />
+                                Gérer / Annuler l'abonnement
+                            </a>
+                        </Button>
+                    )}
+                    <Button variant="outline" size="sm" asChild>
+                        <a href="/abonnement">Changer de formule</a>
+                    </Button>
+                </div>
                 <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
                     <div className="flex items-center gap-3">
                         <div className="rounded-full bg-primary/10 p-2.5">
@@ -406,13 +437,50 @@ function PlanTab({ plan, generationsToday = 0 }) {
                         <p className="text-sm font-medium text-green-600 dark:text-green-400">Actif</p>
                     </div>
                 </div>
-
-                <div className="flex justify-end">
-                    <Button variant="outline" asChild>
-                        <a href="/abonnement">Changer de formule</a>
-                    </Button>
-                </div>
             </CardContent>
+
+            {/* Historique des factures */}
+            {invoices.length > 0 && (
+                <CardContent className="border-t border-border pt-6 space-y-3">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" />
+                        Historique de facturation
+                    </p>
+                    <div className="space-y-2">
+                        {invoices.map((inv) => (
+                            <div key={inv.id} className="flex items-center justify-between p-3 rounded-md border border-border text-sm">
+                                <div className="space-y-0.5">
+                                    <p className="font-medium">{inv.number ?? inv.id}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {new Date(inv.date * 1000).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}
+                                        {inv.description}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <InvoiceStatusBadge status={inv.status} />
+                                    <span className="font-semibold tabular-nums">
+                                        {inv.amount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} {inv.currency}
+                                    </span>
+                                    <div className="flex gap-1">
+                                        {inv.pdfUrl && (
+                                            <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer"
+                                                className="text-muted-foreground hover:text-foreground" title="Télécharger la facture">
+                                                <Download className="h-4 w-4" />
+                                            </a>
+                                        )}
+                                        {inv.hostedUrl && (
+                                            <a href={inv.hostedUrl} target="_blank" rel="noopener noreferrer"
+                                                className="text-muted-foreground hover:text-foreground" title="Voir la facture">
+                                                <ExternalLink className="h-4 w-4" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            )}
         </Card>
     );
 }
@@ -426,6 +494,8 @@ export default function AccountPage({ userData = {}, tools = [] }) {
         generationsToday: userData.generationsToday ?? 0,
         limitGeneration:  userData.plan?.limitGeneration ?? 0,
     });
+    const invoices         = userData.invoices ?? [];
+    const hasStripeCustomer = userData.hasStripeCustomer ?? false;
 
     const handleUserUpdate = (updated) => setUser((u) => ({ ...u, ...updated }));
 
@@ -465,7 +535,12 @@ export default function AccountPage({ userData = {}, tools = [] }) {
                             </TabsContent>
 
                             <TabsContent value="plan" className="mt-6">
-                                <PlanTab plan={userData.plan} generationsToday={userData.generationsToday ?? 0} />
+                                <PlanTab
+                                    plan={userData.plan}
+                                    generationsToday={userData.generationsToday ?? 0}
+                                    invoices={invoices}
+                                    hasStripeCustomer={hasStripeCustomer}
+                                />
                             </TabsContent>
                         </Tabs>
                     </div>
