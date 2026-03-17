@@ -7,7 +7,7 @@ import CtaSection from "../components/sections/CtaSection";
 
 export default function Home({ plans = [], tools = [], user = null }) {
     return (
-        <div className="bg-grid">
+        <div className="bg-grid text-foreground">
             <HeroSection />
             <ToolsSection tools={tools} user={user} />
             <PricingSection plans={plans} tools={tools} user={user} />
