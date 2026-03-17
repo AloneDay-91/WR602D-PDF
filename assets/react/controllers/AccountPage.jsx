@@ -5,57 +5,17 @@ import Footer from "../components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
+import { Badge } from "../components/ui/badge";
+import { Label } from "../components/ui/label";
 import {
     User, Mail, Phone, Calendar, Palette, Lock, Eye, EyeOff,
     CheckCircle, XCircle, Zap, CreditCard, ShieldCheck,
     FileText, Download, ExternalLink, Settings2,
+    LayoutDashboard, KeyRound, Receipt, ChevronRight,
+    Sparkles, TrendingUp, Crown,
 } from "lucide-react";
 
-function Alert({ variant, children }) {
-    if (variant === "success") {
-        return (
-            <div className="flex items-center gap-2 rounded-md bg-green-50 border border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-300 px-4 py-3 text-sm">
-                <CheckCircle className="h-4 w-4 shrink-0" />
-                <span>{children}</span>
-            </div>
-        );
-    }
-    return (
-        <div className="flex items-center gap-2 rounded-md bg-red-50 border border-red-200 text-red-800 dark:bg-red-950 dark:border-red-800 dark:text-red-300 px-4 py-3 text-sm">
-            <XCircle className="h-4 w-4 shrink-0" />
-            <span>{children}</span>
-        </div>
-    );
-}
-
-function FieldError({ message }) {
-    if (!message) return null;
-    return (
-        <p className="flex items-center gap-1 text-xs text-red-500 mt-1">
-            <XCircle className="h-3 w-3 shrink-0" />
-            {message}
-        </p>
-    );
-}
-
-function LabeledInput({ label, icon: Icon, id, error, ...props }) {
-    return (
-        <div className="space-y-1.5">
-            <label htmlFor={id} className="text-sm font-medium text-foreground">{label}</label>
-            <div className="relative">
-                {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />}
-                <Input
-                    id={id}
-                    className={`${Icon ? "pl-9" : ""} ${error ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    {...props}
-                />
-            </div>
-            <FieldError message={error} />
-        </div>
-    );
-}
-
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function hexToHsl(hex) {
     const r = parseInt(hex.slice(1,3),16)/255,
           g = parseInt(hex.slice(3,5),16)/255,
@@ -83,8 +43,68 @@ function applyPrimaryColor(hex) {
     root.style.setProperty("--primary-foreground", l > 50 ? "0 0% 9%" : "0 0% 98%");
 }
 
-// ─── Onglet Profil ────────────────────────────────────────────────────────────
-function ProfileTab({ initialData, onUserUpdate }) {
+function planIcon(planName) {
+    if (!planName) return <User className="h-4 w-4" />;
+    const n = planName.toUpperCase();
+    if (n === "PREMIUM") return <Crown className="h-4 w-4" />;
+    if (n === "BASIC")   return <Sparkles className="h-4 w-4" />;
+    return <Zap className="h-4 w-4" />;
+}
+
+// ─── Micro-composants ─────────────────────────────────────────────────────────
+function FieldError({ message }) {
+    if (!message) return null;
+    return (
+        <p className="flex items-center gap-1 text-xs text-destructive mt-1">
+            <XCircle className="h-3 w-3 shrink-0" />{message}
+        </p>
+    );
+}
+
+function FormAlert({ variant, children }) {
+    if (!children) return null;
+    const ok = variant === "success";
+    return (
+        <div className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm ${
+            ok  ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/40 dark:border-green-800 dark:text-green-300"
+                : "bg-destructive/10 border-destructive/20 text-destructive"
+        }`}>
+            {ok ? <CheckCircle className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
+            <span>{children}</span>
+        </div>
+    );
+}
+
+function LabeledInput({ label, icon: Icon, id, error, ...props }) {
+    return (
+        <div className="space-y-1.5">
+            <Label htmlFor={id}>{label}</Label>
+            <div className="relative">
+                {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />}
+                <Input
+                    id={id}
+                    className={`${Icon ? "pl-9" : ""} ${error ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    {...props}
+                />
+            </div>
+            <FieldError message={error} />
+        </div>
+    );
+}
+
+function InvoiceStatusBadge({ status }) {
+    const map = {
+        paid:          { label: "Payée",      variant: "outline", extra: "text-green-600 border-green-300 dark:text-green-400 dark:border-green-700" },
+        open:          { label: "En attente", variant: "outline", extra: "text-yellow-600 border-yellow-300 dark:text-yellow-400 dark:border-yellow-700" },
+        void:          { label: "Annulée",    variant: "secondary", extra: "" },
+        uncollectible: { label: "Impayée",    variant: "destructive", extra: "" },
+    };
+    const s = map[status] ?? { label: status, variant: "secondary", extra: "" };
+    return <Badge variant={s.variant} className={s.extra}>{s.label}</Badge>;
+}
+
+// ─── Section Profil ───────────────────────────────────────────────────────────
+function ProfileSection({ initialData, onUserUpdate }) {
     const [form, setForm] = useState({
         firstname:     initialData.firstname ?? "",
         lastname:      initialData.lastname ?? "",
@@ -94,7 +114,7 @@ function ProfileTab({ initialData, onUserUpdate }) {
         favoriteColor: initialData.favoriteColor ?? "",
     });
     const [errors, setErrors]   = useState({});
-    const [status, setStatus]   = useState(null); // "success" | "error"
+    const [status, setStatus]   = useState(null);
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -107,15 +127,9 @@ function ProfileTab({ initialData, onUserUpdate }) {
         e.preventDefault();
         setLoading(true);
         setStatus(null);
-
         try {
-            const res = await fetch("/compte/profile", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
-            });
+            const res  = await fetch("/compte/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
             const data = await res.json();
-
             if (res.ok) {
                 setStatus("success");
                 setMessage(data.message);
@@ -126,112 +140,68 @@ function ProfileTab({ initialData, onUserUpdate }) {
                 setStatus("error");
                 setMessage("Veuillez corriger les erreurs ci-dessous.");
             }
-        } catch {
-            setStatus("error");
-            setMessage("Une erreur est survenue. Réessayez.");
-        } finally {
-            setLoading(false);
-        }
+        } catch { setStatus("error"); setMessage("Une erreur est survenue. Réessayez."); }
+        finally   { setLoading(false); }
     };
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Informations personnelles</CardTitle>
-                <CardDescription>Modifiez vos informations de profil.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    {status && <Alert variant={status}>{message}</Alert>}
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-lg font-semibold">Informations personnelles</h2>
+                <p className="text-sm text-muted-foreground">Mettez à jour vos informations de profil.</p>
+            </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <LabeledInput
-                            label="Prénom"
-                            icon={User}
-                            id="firstname"
-                            placeholder="Jean"
-                            value={form.firstname}
-                            onChange={handleChange("firstname")}
-                            error={errors.firstname}
-                            required
-                        />
-                        <LabeledInput
-                            label="Nom"
-                            id="lastname"
-                            placeholder="Dupont"
-                            value={form.lastname}
-                            onChange={handleChange("lastname")}
-                            error={errors.lastname}
-                            required
-                        />
-                    </div>
+            <form onSubmit={handleSubmit} className="space-y-5">
+                {status && <FormAlert variant={status}>{message}</FormAlert>}
 
-                    <LabeledInput
-                        label="Adresse email"
-                        icon={Mail}
-                        id="email"
-                        type="email"
-                        placeholder="vous@exemple.fr"
-                        value={form.email}
-                        onChange={handleChange("email")}
-                        error={errors.email}
-                        required
-                    />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <LabeledInput label="Prénom" icon={User} id="firstname" placeholder="Jean"
+                        value={form.firstname} onChange={handleChange("firstname")} error={errors.firstname} required />
+                    <LabeledInput label="Nom" id="lastname" placeholder="Dupont"
+                        value={form.lastname} onChange={handleChange("lastname")} error={errors.lastname} required />
+                </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <LabeledInput
-                            label="Téléphone"
-                            icon={Phone}
-                            id="phone"
-                            type="tel"
-                            placeholder="+33 6 00 00 00 00"
-                            value={form.phone}
-                            onChange={handleChange("phone")}
-                            error={errors.phone}
-                        />
-                        <LabeledInput
-                            label="Date de naissance"
-                            icon={Calendar}
-                            id="dob"
-                            type="date"
-                            value={form.dob}
-                            onChange={handleChange("dob")}
-                            error={errors.dob}
-                        />
-                    </div>
+                <LabeledInput label="Adresse email" icon={Mail} id="email" type="email" placeholder="vous@exemple.fr"
+                    value={form.email} onChange={handleChange("email")} error={errors.email} required />
 
-                    <div className="space-y-1.5">
-                        <label htmlFor="favoriteColor" className="text-sm font-medium text-foreground">
-                            Couleur favorite
-                        </label>
-                        <div className="flex items-center gap-3">
-                            <div className="relative">
-                                <Palette className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                                <Input
-                                    id="favoriteColor"
-                                    type="color"
-                                    value={form.favoriteColor || "#000000"}
-                                    onChange={handleChange("favoriteColor")}
-                                    className="pl-9 w-24 h-9 cursor-pointer"
-                                />
-                            </div>
-                            <span className="text-sm text-muted-foreground">{form.favoriteColor || "Non définie"}</span>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <LabeledInput label="Téléphone" icon={Phone} id="phone" type="tel" placeholder="+33 6 00 00 00 00"
+                        value={form.phone} onChange={handleChange("phone")} error={errors.phone} />
+                    <LabeledInput label="Date de naissance" icon={Calendar} id="dob" type="date"
+                        value={form.dob} onChange={handleChange("dob")} error={errors.dob} />
+                </div>
+
+                {/* Couleur favorite */}
+                <div className="space-y-1.5">
+                    <Label htmlFor="favoriteColor">Couleur d'accentuation</Label>
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <Palette className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                            <Input id="favoriteColor" type="color"
+                                value={form.favoriteColor || "#000000"}
+                                onChange={handleChange("favoriteColor")}
+                                className="pl-9 w-24 h-9 cursor-pointer" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: form.favoriteColor || "transparent" }} />
+                            <span className="text-sm text-muted-foreground font-mono">{form.favoriteColor || "Non définie"}</span>
                         </div>
                     </div>
+                    <p className="text-xs text-muted-foreground">Personnalise la couleur principale de l'interface.</p>
+                </div>
 
-                    <div className="flex justify-end pt-2">
-                        <Button type="submit" disabled={loading}>
-                            {loading ? "Enregistrement…" : "Enregistrer les modifications"}
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
+                <div className="flex justify-end pt-2">
+                    <Button type="submit" disabled={loading}>
+                        {loading ? "Enregistrement…" : "Sauvegarder les modifications"}
+                    </Button>
+                </div>
+            </form>
+        </div>
     );
 }
 
-// ─── Onglet Sécurité ──────────────────────────────────────────────────────────
-function SecurityTab() {
+// ─── Section Sécurité ─────────────────────────────────────────────────────────
+function SecuritySection() {
     const [form, setForm]       = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
     const [show, setShow]       = useState({ current: false, new: false, confirm: false });
     const [errors, setErrors]   = useState({});
@@ -244,54 +214,29 @@ function SecurityTab() {
         setErrors((err) => ({ ...err, [field]: undefined }));
     };
 
-    const toggleShow = (field) => setShow((s) => ({ ...s, [field]: !s[field] }));
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setStatus(null);
-
         try {
-            const res = await fetch("/compte/password", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
-            });
+            const res  = await fetch("/compte/password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
             const data = await res.json();
-
-            if (res.ok) {
-                setStatus("success");
-                setMessage(data.message);
-                setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-            } else {
-                setErrors(data.errors ?? {});
-                setStatus("error");
-                setMessage("Veuillez corriger les erreurs ci-dessous.");
-            }
-        } catch {
-            setStatus("error");
-            setMessage("Une erreur est survenue. Réessayez.");
-        } finally {
-            setLoading(false);
-        }
+            if (res.ok) { setStatus("success"); setMessage(data.message); setForm({ currentPassword: "", newPassword: "", confirmPassword: "" }); }
+            else         { setErrors(data.errors ?? {}); setStatus("error"); setMessage("Veuillez corriger les erreurs."); }
+        } catch { setStatus("error"); setMessage("Une erreur est survenue."); }
+        finally   { setLoading(false); }
     };
 
-    const PasswordInput = ({ id, field, showKey, label, placeholder, error }) => (
+    const PwInput = ({ id, field, showKey, label, placeholder, error }) => (
         <div className="space-y-1.5">
-            <label htmlFor={id} className="text-sm font-medium text-foreground">{label}</label>
+            <Label htmlFor={id}>{label}</Label>
             <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    id={id}
-                    type={show[showKey] ? "text" : "password"}
-                    placeholder={placeholder}
-                    value={form[field]}
-                    onChange={handleChange(field)}
-                    className={`pl-9 pr-9 ${error ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                    required
-                />
-                <button type="button" onClick={() => toggleShow(showKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
+                <Input id={id} type={show[showKey] ? "text" : "password"} placeholder={placeholder}
+                    value={form[field]} onChange={handleChange(field)}
+                    className={`pl-9 pr-9 ${error ? "border-destructive focus-visible:ring-destructive" : ""}`} required />
+                <button type="button" tabIndex={-1} onClick={() => setShow((s) => ({ ...s, [showKey]: !s[showKey] }))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                     {show[showKey] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
             </div>
@@ -300,178 +245,167 @@ function SecurityTab() {
     );
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Changer le mot de passe</CardTitle>
-                <CardDescription>Assurez-vous d'utiliser un mot de passe fort.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    {status && <Alert variant={status}>{message}</Alert>}
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-lg font-semibold">Sécurité du compte</h2>
+                <p className="text-sm text-muted-foreground">Mettez à jour votre mot de passe régulièrement.</p>
+            </div>
 
-                    <PasswordInput id="currentPassword" field="currentPassword" showKey="current"
-                        label="Mot de passe actuel" placeholder="••••••••" error={errors.currentPassword} />
-                    <PasswordInput id="newPassword" field="newPassword" showKey="new"
+            {/* Info card sécurité */}
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div className="text-sm">
+                    <p className="font-medium text-foreground">Conseils de sécurité</p>
+                    <p className="text-muted-foreground mt-0.5">Utilisez au moins 8 caractères, incluant lettres, chiffres et symboles.</p>
+                </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+                {status && <FormAlert variant={status}>{message}</FormAlert>}
+                <PwInput id="currentPassword" field="currentPassword" showKey="current"
+                    label="Mot de passe actuel" placeholder="••••••••" error={errors.currentPassword} />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <PwInput id="newPassword" field="newPassword" showKey="new"
                         label="Nouveau mot de passe" placeholder="••••••••" error={errors.newPassword} />
-                    <PasswordInput id="confirmPassword" field="confirmPassword" showKey="confirm"
-                        label="Confirmer le nouveau mot de passe" placeholder="••••••••" error={errors.confirmPassword} />
-
-                    <div className="flex justify-end pt-2">
-                        <Button type="submit" disabled={loading}>
-                            {loading ? "Mise à jour…" : "Mettre à jour le mot de passe"}
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
-    );
-}
-
-// ─── Statut badge facture ─────────────────────────────────────────────────────
-function InvoiceStatusBadge({ status }) {
-    const map = {
-        paid:           { label: "Payée",     className: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400" },
-        open:           { label: "En attente", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400" },
-        void:           { label: "Annulée",   className: "bg-muted text-muted-foreground" },
-        uncollectible:  { label: "Impayée",   className: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400" },
-    };
-    const s = map[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
-    return (
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${s.className}`}>
-            {s.label}
-        </span>
-    );
-}
-
-// ─── Onglet Abonnement ────────────────────────────────────────────────────────
-function PlanTab({ plan, generationsToday = 0, invoices = [], hasStripeCustomer = false }) {
-    if (!plan) {
-        return (
-            <Card>
-                <CardContent className="py-10 text-center text-muted-foreground">
-                    Aucun abonnement associé à ce compte.
-                </CardContent>
-            </Card>
-        );
-    }
-
-    const isUnlimited = plan.limitGeneration <= 0;
-    const used = generationsToday;
-    const limit = plan.limitGeneration;
-    const percent = isUnlimited ? 0 : Math.min(100, Math.round((used / limit) * 100));
-    const remaining = isUnlimited ? null : limit - used;
-    const isFull = !isUnlimited && used >= limit;
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Mon abonnement</CardTitle>
-                <CardDescription>Votre formule actuelle.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                {/* Boutons d'action */}
-                <div className="flex flex-col sm:flex-row gap-2 justify-end">
-                    {hasStripeCustomer && (
-                        <Button variant="destructive" size="sm" asChild>
-                            <a href="/abonnement/portal">
-                                <Settings2 className="mr-2 h-4 w-4" />
-                                Gérer / Annuler l'abonnement
-                            </a>
-                        </Button>
-                    )}
-                    <Button variant="outline" size="sm" asChild>
-                        <a href="/abonnement">Changer de formule</a>
+                    <PwInput id="confirmPassword" field="confirmPassword" showKey="confirm"
+                        label="Confirmer le mot de passe" placeholder="••••••••" error={errors.confirmPassword} />
+                </div>
+                <div className="flex justify-end pt-2">
+                    <Button type="submit" disabled={loading}>
+                        {loading ? "Mise à jour…" : "Mettre à jour le mot de passe"}
                     </Button>
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
+            </form>
+        </div>
+    );
+}
+
+// ─── Section Abonnement ───────────────────────────────────────────────────────
+function BillingSection({ plan, generationsToday = 0, invoices = [], hasStripeCustomer = false }) {
+    if (!plan) return (
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-lg font-semibold">Abonnement & Facturation</h2>
+                <p className="text-sm text-muted-foreground">Gérez votre formule et vos factures.</p>
+            </div>
+            <div className="rounded-lg border border-dashed border-border p-10 text-center text-muted-foreground">
+                Aucun abonnement associé à ce compte.
+            </div>
+        </div>
+    );
+
+    const isUnlimited = plan.limitGeneration <= 0;
+    const used        = generationsToday;
+    const limit       = plan.limitGeneration;
+    const percent     = isUnlimited ? 100 : Math.min(100, Math.round((used / limit) * 100));
+    const remaining   = isUnlimited ? null : limit - used;
+    const isFull      = !isUnlimited && used >= limit;
+
+    return (
+        <div className="space-y-8">
+            <div>
+                <h2 className="text-lg font-semibold">Abonnement & Facturation</h2>
+                <p className="text-sm text-muted-foreground">Gérez votre formule et consultez vos factures.</p>
+            </div>
+
+            {/* Plan actuel */}
+            <div className="rounded-xl border border-border overflow-hidden">
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="rounded-full bg-primary/10 p-2.5">
-                            <CreditCard className="h-5 w-5 text-primary" />
+                        <div className="rounded-xl bg-primary/15 p-2.5">
+                            {planIcon(plan.name)}
                         </div>
                         <div>
-                            <p className="font-semibold text-foreground">{plan.name}</p>
+                            <div className="flex items-center gap-2">
+                                <p className="font-semibold text-foreground">{plan.name}</p>
+                                <Badge variant="secondary" className="text-xs">Actif</Badge>
+                            </div>
                             <p className="text-sm text-muted-foreground">{plan.description}</p>
                         </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                         <p className="text-2xl font-bold">{plan.price.toLocaleString("fr-FR")}€</p>
                         <p className="text-xs text-muted-foreground">/ mois</p>
                     </div>
                 </div>
 
-                {/* Compteur journalier */}
-                <div className="space-y-2 p-4 rounded-lg border border-border">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Zap className="h-4 w-4 text-primary shrink-0" />
-                            <span className="text-sm font-medium">Conversions aujourd'hui</span>
+                {/* Compteur */}
+                <div className="p-5 space-y-3 border-t border-border bg-card">
+                    <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <TrendingUp className="h-3.5 w-3.5" />
+                            <span>Conversions aujourd'hui</span>
                         </div>
-                        <span className={`text-sm font-semibold ${isFull ? "text-red-500" : "text-foreground"}`}>
+                        <span className={`font-semibold tabular-nums ${isFull ? "text-destructive" : ""}`}>
                             {isUnlimited ? `${used} / ∞` : `${used} / ${limit}`}
                         </span>
                     </div>
-                    {!isUnlimited && (
-                        <>
-                            <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                                <div
-                                    className={`h-full rounded-full transition-all ${isFull ? "bg-red-500" : percent >= 80 ? "bg-orange-500" : "bg-primary"}`}
-                                    style={{ width: `${percent}%` }}
-                                />
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                {isFull
-                                    ? "Limite atteinte — réinitialisée demain à minuit."
-                                    : `Il vous reste ${remaining} conversion${remaining > 1 ? "s" : ""} aujourd'hui.`}
-                            </p>
-                        </>
-                    )}
-                    {isUnlimited && (
-                        <p className="text-xs text-muted-foreground">Conversions illimitées.</p>
-                    )}
-                </div>
-
-                <div className="flex items-center gap-3 p-3 rounded-md border border-border">
-                    <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                    <div>
-                        <p className="text-xs text-muted-foreground">Statut</p>
-                        <p className="text-sm font-medium text-green-600 dark:text-green-400">Actif</p>
+                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                                isFull ? "bg-destructive" : percent >= 80 ? "bg-orange-500" : "bg-primary"
+                            }`}
+                            style={{ width: `${isUnlimited ? 100 : percent}%` }}
+                        />
                     </div>
-                </div>
-            </CardContent>
-
-            {/* Historique des factures */}
-            {invoices.length > 0 && (
-                <CardContent className="border-t border-border pt-6 space-y-3">
-                    <p className="text-sm font-medium flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        Historique de facturation
+                    <p className="text-xs text-muted-foreground">
+                        {isUnlimited
+                            ? "Conversions illimitées incluses dans votre plan."
+                            : isFull
+                                ? "Limite atteinte — réinitialisée demain à minuit."
+                                : `${remaining} conversion${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""} aujourd'hui.`}
                     </p>
-                    <div className="space-y-2">
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end flex-wrap gap-3">
+                <Button variant="default" size='sm' asChild>
+                    <a href="/abonnement">Changer de formule</a>
+                </Button>
+                {hasStripeCustomer && (
+                    <Button variant="destructive" size='sm' asChild>
+                        <a href="/abonnement/portal">
+                            <Settings2 className="mr-2 h-4 w-4" />
+                            Gérer / Annuler l'abonnement
+                        </a>
+                    </Button>
+                )}
+            </div>
+
+            {/* Factures */}
+            {invoices.length > 0 && (
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="text-sm font-semibold">Historique de facturation</h3>
+                    </div>
+                    <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
                         {invoices.map((inv) => (
-                            <div key={inv.id} className="flex items-center justify-between p-3 rounded-md border border-border text-sm">
-                                <div className="space-y-0.5">
-                                    <p className="font-medium">{inv.number ?? inv.id}</p>
+                            <div key={inv.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-medium truncate">{inv.number ?? inv.id}</p>
                                     <p className="text-xs text-muted-foreground">
                                         {new Date(inv.date * 1000).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })}
-                                        {inv.description}
+                                        {inv.description ? ` — ${inv.description}` : ""}
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 shrink-0 ml-4">
                                     <InvoiceStatusBadge status={inv.status} />
-                                    <span className="font-semibold tabular-nums">
+                                    <span className="text-sm font-semibold tabular-nums">
                                         {inv.amount.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} {inv.currency}
                                     </span>
-                                    <div className="flex gap-1">
+                                    <div className="flex gap-1.5">
                                         {inv.pdfUrl && (
                                             <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-foreground" title="Télécharger la facture">
-                                                <Download className="h-4 w-4" />
+                                                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Télécharger">
+                                                <Download className="h-3.5 w-3.5" />
                                             </a>
                                         )}
                                         {inv.hostedUrl && (
                                             <a href={inv.hostedUrl} target="_blank" rel="noopener noreferrer"
-                                                className="text-muted-foreground hover:text-foreground" title="Voir la facture">
-                                                <ExternalLink className="h-4 w-4" />
+                                                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Voir en ligne">
+                                                <ExternalLink className="h-3.5 w-3.5" />
                                             </a>
                                         )}
                                     </div>
@@ -479,14 +413,22 @@ function PlanTab({ plan, generationsToday = 0, invoices = [], hasStripeCustomer 
                             </div>
                         ))}
                     </div>
-                </CardContent>
+                </div>
             )}
-        </Card>
+        </div>
     );
 }
 
+// ─── Nav items sidebar ────────────────────────────────────────────────────────
+const NAV = [
+    { key: "profile",  label: "Profil",       icon: LayoutDashboard, desc: "Informations personnelles" },
+    { key: "security", label: "Sécurité",      icon: KeyRound,        desc: "Mot de passe" },
+    { key: "billing",  label: "Abonnement",    icon: Receipt,         desc: "Plan & Facturation" },
+];
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function AccountPage({ userData = {}, tools = [] }) {
+    const [activeTab, setActiveTab] = useState("profile");
     const [user, setUser] = useState({
         firstname:        userData.firstname,
         lastname:         userData.lastname,
@@ -494,8 +436,11 @@ export default function AccountPage({ userData = {}, tools = [] }) {
         generationsToday: userData.generationsToday ?? 0,
         limitGeneration:  userData.plan?.limitGeneration ?? 0,
     });
+
     const invoices         = userData.invoices ?? [];
     const hasStripeCustomer = userData.hasStripeCustomer ?? false;
+    const initials         = `${user.firstname?.[0] ?? ""}${user.lastname?.[0] ?? ""}`.toUpperCase();
+    const plan             = userData.plan;
 
     const handleUserUpdate = (updated) => setUser((u) => ({ ...u, ...updated }));
 
@@ -504,50 +449,135 @@ export default function AccountPage({ userData = {}, tools = [] }) {
             <div className="min-h-screen flex flex-col bg-background text-foreground">
                 <Header tools={tools} user={user} />
 
-                <main className="flex-1 py-12 px-4">
-                    <div className="max-w-2xl mx-auto space-y-8">
-
-                        {/* En-tête de page */}
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold shrink-0">
-                                {(user.firstname?.[0] ?? "") + (user.lastname?.[0] ?? "")}
+                <main className="flex-1">
+                    {/* ── Banner hero ── */}
+                    <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b border-border overflow-hidden">
+                        <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(to_bottom,transparent,black)]" />
+                        <div className="relative max-w-5xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center sm:items-end gap-6">
+                            {/* Avatar */}
+                            <div className="relative shrink-0">
+                                <div className="h-20 w-20 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold shadow-lg ring-4 ring-background">
+                                    {initials || <User className="h-8 w-8" />}
+                                </div>
+                                <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-green-500 border-2 border-background" />
                             </div>
-                            <div>
-                                <h1 className="text-2xl font-semibold">{user.firstname} {user.lastname}</h1>
-                                <p className="text-sm text-muted-foreground">{user.email}</p>
+
+                            {/* Identité */}
+                            <div className="text-center sm:text-left flex-1">
+                                <h1 className="text-2xl font-bold">{user.firstname} {user.lastname}</h1>
+                                <p className="text-muted-foreground text-sm">{user.email}</p>
+                                {plan && (
+                                    <div className="mt-2 flex items-center justify-center sm:justify-start gap-2">
+                                        <Badge variant="secondary" className="gap-1 text-xs">
+                                            {planIcon(plan.name)}
+                                            {plan.name}
+                                        </Badge>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Stats rapides */}
+                            <div className="flex gap-3 shrink-0">
+                                <StatPill
+                                    label="Conversions"
+                                    value={user.limitGeneration <= 0 ? "∞" : `${user.generationsToday}/${user.limitGeneration}`}
+                                    icon={<TrendingUp className="h-3.5 w-3.5" />}
+                                />
+                                <StatPill
+                                    label="Statut"
+                                    value="Actif"
+                                    icon={<ShieldCheck className="h-3.5 w-3.5" />}
+                                    green
+                                />
                             </div>
                         </div>
+                    </div>
 
-                        {/* Onglets */}
-                        <Tabs defaultValue="profile">
-                            <TabsList className="w-full">
-                                <TabsTrigger value="profile" className="flex-1">Profil</TabsTrigger>
-                                <TabsTrigger value="security" className="flex-1">Sécurité</TabsTrigger>
-                                <TabsTrigger value="plan" className="flex-1">Abonnement</TabsTrigger>
-                            </TabsList>
+                    {/* ── Layout sidebar + contenu ── */}
+                    <div className="max-w-5xl mx-auto px-6 py-10">
+                        <div className="flex flex-col md:flex-row gap-8">
 
-                            <TabsContent value="profile" className="mt-6">
-                                <ProfileTab initialData={userData} onUserUpdate={handleUserUpdate} />
-                            </TabsContent>
+                            {/* Sidebar */}
+                            <aside className="w-full md:w-56 shrink-0">
+                                <nav className="space-y-1">
+                                    {NAV.map(({ key, label, icon: Icon, desc }) => {
+                                        const active = activeTab === key;
+                                        return (
+                                            <button
+                                                key={key}
+                                                onClick={() => setActiveTab(key)}
+                                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all group ${
+                                                    active
+                                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                }`}
+                                            >
+                                                <Icon className="h-4 w-4 shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={`text-sm font-medium ${active ? "text-primary-foreground" : ""}`}>{label}</p>
+                                                    <p className={`text-xs truncate ${active ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{desc}</p>
+                                                </div>
+                                                <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${active ? "translate-x-0.5 text-primary-foreground" : "opacity-0 group-hover:opacity-100"}`} />
+                                            </button>
+                                        );
+                                    })}
+                                </nav>
 
-                            <TabsContent value="security" className="mt-6">
-                                <SecurityTab />
-                            </TabsContent>
+                                {/* Plan card sidebar */}
+                                {plan && (
+                                    <Card className="mt-6 border-primary/20 bg-primary/5">
+                                        <CardContent className="p-4 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <CreditCard className="h-4 w-4 text-primary" />
+                                                <p className="text-sm font-medium">Mon plan</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-base font-bold">{plan.name}</p>
+                                                <p className="text-sm text-muted-foreground">{plan.price.toLocaleString("fr-FR")}€ / mois</p>
+                                            </div>
+                                            <Button size="sm" variant="outline" className="w-full text-xs" asChild>
+                                                <a href="/abonnement">Changer de formule</a>
+                                            </Button>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </aside>
 
-                            <TabsContent value="plan" className="mt-6">
-                                <PlanTab
-                                    plan={userData.plan}
-                                    generationsToday={userData.generationsToday ?? 0}
-                                    invoices={invoices}
-                                    hasStripeCustomer={hasStripeCustomer}
-                                />
-                            </TabsContent>
-                        </Tabs>
+                            {/* Contenu principal */}
+                            <div className="flex-1 min-w-0">
+                                <Card className="shadow-sm">
+                                    <CardContent className="p-6 sm:p-8">
+                                        {activeTab === "profile"  && <ProfileSection  initialData={userData} onUserUpdate={handleUserUpdate} />}
+                                        {activeTab === "security" && <SecuritySection />}
+                                        {activeTab === "billing"  && (
+                                            <BillingSection
+                                                plan={plan}
+                                                generationsToday={userData.generationsToday ?? 0}
+                                                invoices={invoices}
+                                                hasStripeCustomer={hasStripeCustomer}
+                                            />
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
                     </div>
                 </main>
 
                 <Footer />
             </div>
         </ThemeProvider>
+    );
+}
+
+function StatPill({ label, value, icon, green = false }) {
+    return (
+        <div className="flex flex-col items-center gap-0.5 bg-background/60 backdrop-blur border border-border rounded-xl px-4 py-2.5 min-w-[90px]">
+            <div className={`flex items-center gap-1 text-xs ${green ? "text-green-500" : "text-primary"}`}>
+                {icon}
+                <span className="font-semibold tabular-nums">{value}</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground">{label}</span>
+        </div>
     );
 }

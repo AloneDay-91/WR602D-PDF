@@ -27,13 +27,22 @@ final class CompteController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        $toolsData = array_map(fn($t) => [
-            'id'          => $t->getId(),
-            'name'        => $t->getName(),
-            'icon'        => $t->getIcon(),
-            'description' => $t->getDescription(),
-            'slug'        => $t->getSlug(),
-        ], $toolRepository->findBy(['isActive' => true]));
+        $toolsData = array_map(function ($t) {
+            $minPlan = null;
+            foreach ($t->getPlans() as $plan) {
+                if ($minPlan === null || $plan->getPrice() < $minPlan->getPrice()) {
+                    $minPlan = $plan;
+                }
+            }
+            return [
+                'id'          => $t->getId(),
+                'name'        => $t->getName(),
+                'icon'        => $t->getIcon(),
+                'description' => $t->getDescription(),
+                'slug'        => $t->getSlug(),
+                'minPlan'     => $minPlan ? ['name' => $minPlan->getName(), 'price' => $minPlan->getPrice()] : null,
+            ];
+        }, $toolRepository->findBy(['isActive' => true]));
 
         $plan = $user->getPlan();
         $generationsToday = $generationRepository->countByUserToday($user);
