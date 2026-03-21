@@ -53,7 +53,7 @@ jobs:
               run: vendor/bin/phpcs --standard=PSR2 --warning-severity=0 src/
 
             - name: Run PHPStan
-              run: vendor/bin/phpstan analyze src/ --level=2 --memory-limit=512M
+              run: vendor/bin/phpstan analyze src/ --level=2 --memory-limit=512M -c phpstan.neon
 
             - name: Run PHPMD
               run: vendor/bin/phpmd src/ text cleancode,codesize,controversial,design
