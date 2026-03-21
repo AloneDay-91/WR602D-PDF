@@ -144,5 +144,4 @@ class Generation
 
         return $this;
     }
-
 }

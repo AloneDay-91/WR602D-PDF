@@ -7,7 +7,7 @@ use App\Entity\User;
 final class PdfGeneratedEvent
 {
     public function __construct(
-        private readonly User   $user,
+        private readonly User $user,
         private readonly string $toolSlug,
         private readonly string $pdfContent,
         private readonly string $originalFilename,
