@@ -7,8 +7,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Address;
 use Symfony\Component\Routing\Attribute\Route;
 
 final class ContactController extends AbstractController
@@ -74,18 +75,18 @@ final class ContactController extends AbstractController
             return $this->json(['errors' => $errors], 422);
         }
 
-        $mail = (new Email())
-            ->from($email)
+        $mail = (new TemplatedEmail())
+            ->from(new Address('noreply@zenpdf.fr', 'ZenPDF'))
             ->to('contact@zenpdf.fr')
             ->replyTo($email)
             ->subject("[Contact] $subject")
-            ->text("Nom : $name\nEmail : $email\n\n$message")
-            ->html(sprintf(
-                '<p><strong>Nom :</strong> %s</p><p><strong>Email :</strong> %s</p><hr><p>%s</p>',
-                htmlspecialchars($name),
-                htmlspecialchars($email),
-                nl2br(htmlspecialchars($message)),
-            ));
+            ->htmlTemplate('emails/contact_notification.html.twig')
+            ->context([
+                'name'    => $name,
+                'email'   => $email,
+                'subject' => $subject,
+                'message' => $message,
+            ]);
 
         $mailer->send($mail);
 

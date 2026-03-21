@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FileDown, Zap, Shield, Scissors } from "lucide-react";
 import ToolPageLayout from "../components/ToolPageLayout";
+import { fetchConvert, downloadBlob } from "../lib/fetchConvert";
 import DropZone from "../components/DropZone";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -27,20 +28,10 @@ export default function SplitPage({ tool, allTools = [], user = null }) {
         formData.append("splitMode", splitMode);
         formData.append("splitSpan", splitSpan);
         try {
-            const response = await fetch("/convertisseur/split", { method: "POST", body: formData });
-            if (response.ok) {
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = blobUrl;
-                link.download = "split.zip";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(blobUrl);
-            } else {
-                alert((await response.text()) || "Une erreur est survenue.");
-            }
+            const response = await fetchConvert("/convertisseur/split", formData);
+            if (!response) return; // 403 handled by ToolPageLayout dialog
+            const blob = await response.blob();
+            downloadBlob(blob, "split.zip");
         } catch {
             alert("Erreur de connexion. Veuillez réessayer.");
         } finally {

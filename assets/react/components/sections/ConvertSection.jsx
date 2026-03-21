@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { icons, Lock, ArrowRight, Search, Zap, FileText } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { icons, Lock, ArrowRight, Search, Zap, FileText, X, Crown } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -16,7 +16,77 @@ const planMeta = {
     PREMIUM: { label: "Premium", dot: "bg-amber-500",         badge: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800" },
 };
 
-function ToolCard({ tool, user }) {
+function UpgradeDialog({ tool, onClose }) {
+    const planName = tool?.minPlan?.name ?? "BASIC";
+    const meta = planMeta[planName] ?? planMeta.BASIC;
+    const Icon = getIcon(tool?.icon);
+
+    // Close on Escape
+    useEffect(() => {
+        const handler = (e) => e.key === "Escape" && onClose();
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [onClose]);
+
+    if (!tool) return null;
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            onClick={onClose}
+        >
+            <div
+                className="relative w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl p-6 space-y-5"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Close button */}
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <X className="h-4 w-4" />
+                </button>
+
+                {/* Icon */}
+                <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-muted p-3 shrink-0">
+                        <Lock className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                        <p className="font-semibold text-sm">{tool.name}</p>
+                        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", meta.badge)}>
+                            {meta.label}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Message */}
+                <div className="space-y-1">
+                    <p className="text-sm font-medium text-foreground">Fonctionnalité réservée</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                        Cet outil nécessite le plan <strong>{meta.label}</strong>. Passez à un plan supérieur pour y accéder.
+                    </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-2">
+                    <Button asChild className="w-full">
+                        <a href="/abonnement">
+                            <Crown className="h-3.5 w-3.5 mr-2" />
+                            Voir les formules
+                        </a>
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={onClose}>
+                        Fermer
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ToolCard({ tool, user, onLocked }) {
     const Icon = getIcon(tool.icon);
     const accessible = hasToolAccess(user, tool);
     const planName = tool.minPlan?.name ?? "FREE";
@@ -27,7 +97,7 @@ function ToolCard({ tool, user }) {
             "relative flex flex-col gap-4 rounded-xl border border-border bg-card p-5 transition-all duration-200 h-full",
             accessible
                 ? "hover:shadow-md hover:border-primary/30 group cursor-pointer"
-                : "opacity-55 grayscale cursor-not-allowed"
+                : "opacity-55 grayscale cursor-pointer hover:opacity-70"
         )}>
             {/* Icon + plan badge */}
             <div className="flex items-start justify-between">
@@ -64,30 +134,37 @@ function ToolCard({ tool, user }) {
                 </div>
             ) : (
                 <p className="text-[11px] text-muted-foreground">
-                    Nécessite{" "}
-                    <a
-                        href="/abonnement"
-                        className="underline hover:text-foreground transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {meta.label}
-                    </a>
+                    Nécessite <strong>{meta.label}</strong>
                 </p>
             )}
         </div>
     );
 
-    return accessible ? (
-        <a href={`/convertisseur/${tool.slug}`} className="group h-full">
+    if (accessible) {
+        return (
+            <a href={`/convertisseur/${tool.slug}`} className="group h-full">
+                {inner}
+            </a>
+        );
+    }
+
+    return (
+        <div className="h-full cursor-pointer" onClick={() => onLocked(tool)}>
             {inner}
-        </a>
-    ) : (
-        <div className="h-full">{inner}</div>
+        </div>
     );
 }
 
 export default function ConvertSection({ tools = [], user = null }) {
     const [search, setSearch] = useState("");
+
+    // Auto-open dialog if redirected from a 403 (e.g. ?forbidden=split)
+    const [lockedTool, setLockedTool] = useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        const slug = params.get("forbidden");
+        if (!slug) return null;
+        return tools.find((t) => t.slug === slug) ?? null;
+    });
 
     const filtered = useMemo(() => {
         if (!search.trim()) return tools;
@@ -157,6 +234,16 @@ export default function ConvertSection({ tools = [], user = null }) {
                 </p>
 
                 {/* Grid */}
+                {lockedTool && (
+                    <UpgradeDialog tool={lockedTool} onClose={() => {
+                        setLockedTool(null);
+                        // Remove ?forbidden= from URL without reloading
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("forbidden");
+                        window.history.replaceState({}, "", url.toString());
+                    }} />
+                )}
+
                 {filtered.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-border flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
                         <FileText className="h-12 w-12 opacity-30" />
@@ -171,7 +258,7 @@ export default function ConvertSection({ tools = [], user = null }) {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filtered.map((tool) => (
-                            <ToolCard key={tool.id} tool={tool} user={user} />
+                            <ToolCard key={tool.id} tool={tool} user={user} onLocked={setLockedTool} />
                         ))}
                     </div>
                 )}

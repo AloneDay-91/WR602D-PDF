@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { FileText, Upload, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
@@ -12,8 +12,23 @@ export default function DropZone({
     multiple = false,
 }) {
     const inputRef = useRef(null);
+    // Counter avoids false leaves when cursor moves over child elements
+    const [dragCount, setDragCount] = useState(0);
+    const isDragging = dragCount > 0;
 
-    const handleDrag = (e) => {
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragCount((c) => c + 1);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragCount((c) => Math.max(0, c - 1));
+    };
+
+    const handleDragOver = (e) => {
         e.preventDefault();
         e.stopPropagation();
     };
@@ -21,6 +36,7 @@ export default function DropZone({
     const handleDrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        setDragCount(0);
         const dropped = e.dataTransfer.files;
         if (dropped?.length) onFile(multiple ? dropped : dropped[0]);
     };
@@ -34,11 +50,13 @@ export default function DropZone({
         <div
             className={cn(
                 "relative border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer group",
-                "border-border hover:border-primary/50 hover:bg-primary/3"
+                isDragging
+                    ? "border-primary bg-primary/5 scale-[1.01]"
+                    : "border-border hover:border-primary/50 hover:bg-primary/3"
             )}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
             onDrop={handleDrop}
             onClick={() => inputRef.current?.click()}
         >
@@ -72,13 +90,22 @@ export default function DropZone({
                 </div>
             ) : (
                 <div className="flex flex-col items-center gap-3">
-                    <div className="rounded-xl bg-muted p-3 group-hover:bg-primary/10 transition-colors">
-                        <Upload className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <div className={cn(
+                        "rounded-xl p-3 transition-colors",
+                        isDragging ? "bg-primary/15" : "bg-muted group-hover:bg-primary/10"
+                    )}>
+                        <Upload className={cn(
+                            "h-6 w-6 transition-colors",
+                            isDragging ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                        )} />
                     </div>
                     <div>
                         <p className="text-sm font-medium text-foreground">
-                            Glissez-déposez, ou{" "}
-                            <span className="text-primary">parcourez</span>
+                            {isDragging ? (
+                                <span className="text-primary font-semibold">Déposez ici</span>
+                            ) : (
+                                <>Glissez-déposez, ou <span className="text-primary">parcourez</span></>
+                            )}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">{hint}</p>
                     </div>

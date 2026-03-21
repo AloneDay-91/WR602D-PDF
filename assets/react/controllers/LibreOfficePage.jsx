@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { icons, FileDown, Zap, Shield, Layers } from "lucide-react";
 import ToolPageLayout from "../components/ToolPageLayout";
+import { fetchConvert, downloadBlob } from "../lib/fetchConvert";
 import DropZone from "../components/DropZone";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
@@ -39,20 +40,10 @@ export default function LibreOfficePage({ tool, allTools = [], user = null }) {
         const formData = new FormData();
         formData.append("file", file);
         try {
-            const response = await fetch(`/convertisseur/${tool.slug}`, { method: "POST", body: formData });
-            if (response.ok) {
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = blobUrl;
-                link.download = "converted.pdf";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(blobUrl);
-            } else {
-                alert((await response.text()) || "Une erreur est survenue.");
-            }
+            const response = await fetchConvert(`/convertisseur/${tool.slug}`, formData);
+            if (!response) return; // 403 handled by ToolPageLayout dialog
+            const blob = await response.blob();
+            downloadBlob(blob, "converted.pdf");
         } catch {
             alert("Erreur de connexion. Veuillez réessayer.");
         } finally {

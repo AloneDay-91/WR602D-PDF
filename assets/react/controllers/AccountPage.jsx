@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Label } from "../components/ui/label";
-import {
+import { icons as lucideIcons,
     User, Mail, Phone, Calendar, Palette, Lock, Eye, EyeOff,
     CheckCircle, XCircle, Zap, CreditCard, ShieldCheck,
     FileText, Download, ExternalLink, Settings2,
@@ -36,11 +36,22 @@ function hexToHsl(hex) {
 function applyPrimaryColor(hex) {
     if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
     const hsl = hexToHsl(hex);
-    const l = parseFloat(hsl.split(" ")[2]);
+    const parts  = hsl.split(" ");
+    const hDeg   = parseInt(parts[0]);
+    const sPct   = parseInt(parts[1]);
+    const lPct   = parseInt(parts[2]);
+    const dark   = document.documentElement.classList.contains("dark");
+    const fg     = lPct > 50 ? "0 0% 9%" : "0 0% 98%";
+    const accentL  = dark ? Math.min(lPct, 15) : Math.max(lPct, 92);
+    const accentFg = dark ? Math.max(lPct, 70) : Math.min(lPct, 25);
     const root = document.documentElement;
-    root.style.setProperty("--primary", hsl);
-    root.style.setProperty("--ring", hsl);
-    root.style.setProperty("--primary-foreground", l > 50 ? "0 0% 9%" : "0 0% 98%");
+    root.style.setProperty("--primary",            hsl);
+    root.style.setProperty("--ring",               hsl);
+    root.style.setProperty("--primary-foreground", fg);
+    root.style.setProperty("--accent",             `${hDeg} ${sPct}% ${accentL}%`);
+    root.style.setProperty("--accent-foreground",  `${hDeg} ${sPct}% ${accentFg}%`);
+    root.style.setProperty("--sidebar-primary",    hsl);
+    root.style.setProperty("--sidebar-ring",       hsl);
 }
 
 function planIcon(planName) {
@@ -281,7 +292,13 @@ function SecuritySection() {
 }
 
 // ─── Section Abonnement ───────────────────────────────────────────────────────
-function BillingSection({ plan, generationsToday = 0, invoices = [], hasStripeCustomer = false }) {
+function accessibleTools(tools, planName) {
+    const rank = { FREE: 0, BASIC: 1, PREMIUM: 2 };
+    const userRank = rank[planName] ?? 0;
+    return tools.filter((t) => (rank[t.minPlan?.name] ?? 0) <= userRank);
+}
+
+function BillingSection({ plan, generationsToday = 0, invoices = [], hasStripeCustomer = false, tools = [] }) {
     if (!plan) return (
         <div className="space-y-6">
             <div>
@@ -357,6 +374,55 @@ function BillingSection({ plan, generationsToday = 0, invoices = [], hasStripeCu
                     </p>
                 </div>
             </div>
+
+            {/* Outils */}
+            {tools.length > 0 && (() => {
+                const rank = { FREE: 0, BASIC: 1, PREMIUM: 2 };
+                const userRank = rank[plan.name] ?? 0;
+                return (
+                    <div className="space-y-3">
+                        <p className="text-sm font-semibold">
+                            Outils disponibles
+                            <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                ({accessibleTools(tools, plan.name).length}/{tools.length})
+                            </span>
+                        </p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {tools.map((t) => {
+                                const accessible = (rank[t.minPlan?.name] ?? 0) <= userRank;
+                                const Icon = accessible
+                                    ? (lucideIcons[t.icon] ?? lucideIcons.Wrench)
+                                    : Lock;
+                                if (accessible) {
+                                    return (
+                                        <a
+                                            key={t.id}
+                                            href={`/convertisseur/${t.slug}`}
+                                            className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5 text-sm hover:border-primary/40 hover:bg-accent transition-colors group"
+                                        >
+                                            <div className="rounded-md bg-primary/10 p-1.5 shrink-0 group-hover:bg-primary/20 transition-colors">
+                                                <Icon className="h-3.5 w-3.5 text-primary" />
+                                            </div>
+                                            <span className="font-medium text-xs truncate">{t.name}</span>
+                                        </a>
+                                    );
+                                }
+                                return (
+                                    <div
+                                        key={t.id}
+                                        className="flex items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2.5 text-sm opacity-50 cursor-not-allowed"
+                                    >
+                                        <div className="rounded-md bg-muted p-1.5 shrink-0">
+                                            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </div>
+                                        <span className="font-medium text-xs truncate">{t.name}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            })()}
 
             {/* Actions */}
             <div className="flex justify-end flex-wrap gap-3">
@@ -435,6 +501,9 @@ export default function AccountPage({ userData = {}, tools = [] }) {
         email:            userData.email,
         generationsToday: userData.generationsToday ?? 0,
         limitGeneration:  userData.plan?.limitGeneration ?? 0,
+        isBasic:          userData.isBasic ?? false,
+        isPremium:        userData.isPremium ?? false,
+        plan:             userData.plan ?? null,
     });
 
     const invoices         = userData.invoices ?? [];
@@ -555,6 +624,7 @@ export default function AccountPage({ userData = {}, tools = [] }) {
                                                 generationsToday={userData.generationsToday ?? 0}
                                                 invoices={invoices}
                                                 hasStripeCustomer={hasStripeCustomer}
+                                                tools={tools}
                                             />
                                         )}
                                     </CardContent>

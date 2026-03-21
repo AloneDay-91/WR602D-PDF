@@ -1,5 +1,5 @@
-import React from "react";
-import { icons, ArrowLeft, Zap, Shield, Clock } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { icons, ArrowLeft, Zap, Shield, Clock, X, AlertTriangle } from "lucide-react";
 import { ThemeProvider } from "./ThemeProvider";
 import Header from "./Header";
 import Footer from "./Footer";
@@ -22,6 +22,60 @@ const DEFAULT_FEATURES = [
     { icon: Shield, title: "Sécurisé", desc: "Fichiers supprimés après traitement" },
 ];
 
+function LimitReachedDialog({ onClose }) {
+    useEffect(() => {
+        const handler = (e) => e.key === "Escape" && onClose();
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+            onClick={onClose}
+        >
+            <div
+                className="relative w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl p-6 space-y-5"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <X className="h-4 w-4" />
+                </button>
+
+                <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-amber-100 dark:bg-amber-950 p-3 shrink-0">
+                        <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <p className="font-semibold text-sm">Limite journalière atteinte</p>
+                </div>
+
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                    Vous avez atteint votre limite de conversions pour aujourd'hui. Passez à un plan supérieur pour augmenter ou supprimer cette limite.
+                </p>
+
+                <div className="flex flex-col gap-2">
+                    <a
+                        href="/abonnement"
+                        className="inline-flex items-center justify-center w-full rounded-lg bg-primary text-primary-foreground text-sm font-medium px-4 py-2.5 hover:bg-primary/90 transition-colors"
+                    >
+                        Voir les formules
+                    </a>
+                    <button
+                        onClick={onClose}
+                        className="inline-flex items-center justify-center w-full rounded-lg border border-border text-sm font-medium px-4 py-2.5 hover:bg-muted transition-colors"
+                    >
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function ToolPageLayout({
     tool,
     allTools = [],
@@ -32,10 +86,18 @@ export default function ToolPageLayout({
     const Icon = getIcon(tool.icon);
     const planName = tool.minPlan?.name;
     const meta = planName ? (planMeta[planName] ?? planMeta.FREE) : null;
+    const [limitReached, setLimitReached] = useState(false);
+
+    useEffect(() => {
+        const handler = () => setLimitReached(true);
+        window.addEventListener("zenpdf:limitReached", handler);
+        return () => window.removeEventListener("zenpdf:limitReached", handler);
+    }, []);
 
     return (
         <ThemeProvider defaultTheme="system" storageKey="zenpdf-theme">
             <div className="min-h-screen flex flex-col bg-background text-foreground">
+                {limitReached && <LimitReachedDialog onClose={() => setLimitReached(false)} />}
                 <Header tools={allTools} user={user} />
 
                 <main className="flex-1">

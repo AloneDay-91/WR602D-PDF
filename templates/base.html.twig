@@ -21,6 +21,8 @@
         (function () {
             var hex = '{{ app.user.favoriteColor|e('js') }}';
             if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) return;
+
+            // Hex → HSL
             var r = parseInt(hex.slice(1,3),16)/255,
                 g = parseInt(hex.slice(3,5),16)/255,
                 b = parseInt(hex.slice(5,7),16)/255;
@@ -33,12 +35,33 @@
                 else if (max === g) h = ((b - r) / d + 2) / 6;
                 else                h = ((r - g) / d + 4) / 6;
             }
-            var hsl = Math.round(h*360) + ' ' + Math.round(s*100) + '% ' + Math.round(l*100) + '%';
-            var fg  = Math.round(l*100) > 50 ? '0 0% 9%' : '0 0% 98%';
+            var hDeg = Math.round(h*360),
+                sPct = Math.round(s*100),
+                lPct = Math.round(l*100);
+            var hsl = hDeg + ' ' + sPct + '% ' + lPct + '%';
+
+            // Detect dark mode (before React runs)
+            var saved = localStorage.getItem('zenpdf-theme') || 'system';
+            var dark  = saved === 'dark' ||
+                        (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+            // Foreground on primary: black for light colors, white for dark
+            var fg = lPct > 50 ? '0 0% 9%' : '0 0% 98%';
+
+            // Accent: same hue, adapted for light/dark mode
+            var accentL  = dark ? Math.min(lPct, 15) : Math.max(lPct, 92);
+            var accentFg = dark ? Math.max(lPct, 70) : Math.min(lPct, 25);
+            var accent   = hDeg + ' ' + sPct + '% ' + accentL + '%';
+            var accentFgHsl = hDeg + ' ' + sPct + '% ' + accentFg + '%';
+
             var root = document.documentElement;
-            root.style.setProperty('--primary', hsl);
-            root.style.setProperty('--ring',    hsl);
+            root.style.setProperty('--primary',            hsl);
+            root.style.setProperty('--ring',               hsl);
             root.style.setProperty('--primary-foreground', fg);
+            root.style.setProperty('--accent',             accent);
+            root.style.setProperty('--accent-foreground',  accentFgHsl);
+            root.style.setProperty('--sidebar-primary',    hsl);
+            root.style.setProperty('--sidebar-ring',       hsl);
         })();
         </script>
         {% endif %}

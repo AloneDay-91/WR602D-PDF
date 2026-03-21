@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { icons, FileDown, Globe, Zap, Shield, Clock } from "lucide-react";
 import ToolPageLayout from "../components/ToolPageLayout";
+import { fetchConvert, downloadBlob } from "../lib/fetchConvert";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -21,20 +22,10 @@ export default function UrlPage({ tool, allTools = [], user = null }) {
         const formData = new FormData();
         formData.append("url", url);
         try {
-            const response = await fetch("/convertisseur/url", { method: "POST", body: formData });
-            if (response.ok) {
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = blobUrl;
-                link.download = "converted.pdf";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(blobUrl);
-            } else {
-                alert((await response.text()) || "Une erreur est survenue.");
-            }
+            const response = await fetchConvert("/convertisseur/url", formData);
+            if (!response) return; // 403 handled by ToolPageLayout dialog
+            const blob = await response.blob();
+            downloadBlob(blob, "converted.pdf");
         } catch {
             alert("Erreur de connexion. Veuillez réessayer.");
         } finally {
