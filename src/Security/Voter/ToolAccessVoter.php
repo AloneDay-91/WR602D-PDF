@@ -27,12 +27,17 @@ class ToolAccessVoter extends Voter
         /** @var Tool $tool */
         $tool = $subject;
 
-        $userPlan = $user->getPlan();
-        if ($userPlan === null) {
-            return false;
+        // User roles: FREE → ['ROLE_USER'], BASIC → ['ROLE_USER','ROLE_BASIC'], PREMIUM → ['ROLE_USER','ROLE_PREMIUM']
+        $userRoles = $token->getRoleNames();
+
+        foreach ($tool->getPlans() as $plan) {
+            // FREE plan has role = null → maps to ROLE_USER
+            $requiredRole = $plan->getRole() ?? 'ROLE_USER';
+            if (in_array($requiredRole, $userRoles, true)) {
+                return true;
+            }
         }
 
-        // Le plan de l'utilisateur est-il parmi les plans autorisés pour cet outil ?
-        return $tool->getPlans()->contains($userPlan);
+        return false;
     }
 }

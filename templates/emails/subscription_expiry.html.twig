@@ -1,0 +1,17 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}Votre abonnement expire bientôt — ZenPDF{% endblock %}
+
+{% block body %}
+    <div class="badge badge-red">⏳ Expiration imminente</div>
+    <h1>Votre abonnement expire {{ days_left == 1 ? 'demain' : 'dans ' ~ days_left ~ ' jours' }}</h1>
+    <p>Bonjour {{ user.firstname }},</p>
+    <p>
+        Votre abonnement <strong>{{ user.plan.name }}</strong> expire le
+        <strong>{{ user.subscriptionEndsAt|date('d/m/Y') }}</strong>.
+        Renouvelez-le maintenant pour ne pas perdre l'accès à vos outils.
+    </p>
+    <a href="{{ absolute_url('/abonnement/portal') }}" class="btn">Gérer mon abonnement</a>
+{% endblock %}
+
+{% block footer_reason %}Vous recevez cet email car vous avez un abonnement actif.{% endblock %}

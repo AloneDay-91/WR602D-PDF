@@ -7,6 +7,9 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    stripe_secret_key: '%env(STRIPE_SECRET_KEY)%'
+    stripe_publishable_key: '%env(STRIPE_PUBLISHABLE_KEY)%'
+    stripe_webhook_secret: '%env(STRIPE_WEBHOOK_SECRET)%'
 
 services:
     # default configuration for services in *this* file
@@ -32,3 +35,16 @@ services:
     App\Controller\HistoriqueController:
         arguments:
             $projectDir: '%kernel.project_dir%'
+
+    App\Controller\ConvertisseurController:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Command\HandleQueueCommand:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\StripeService:
+        arguments:
+            $secretKey: '%stripe_secret_key%'
+            $webhookSecret: '%stripe_webhook_secret%'
