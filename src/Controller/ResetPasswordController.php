@@ -20,6 +20,9 @@ use SymfonyCasts\Bundle\ResetPassword\Controller\ResetPasswordControllerTrait;
 use SymfonyCasts\Bundle\ResetPassword\Exception\ResetPasswordExceptionInterface;
 use SymfonyCasts\Bundle\ResetPassword\ResetPasswordHelperInterface;
 
+/**
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
 #[Route('/reset-password')]
 class ResetPasswordController extends AbstractController
 {
@@ -65,7 +68,8 @@ class ResetPasswordController extends AbstractController
     #[Route('/check-email', name: 'app_check_email')]
     public function checkEmail(TranslatorInterface $translator): Response
     {
-        if (null === ($resetToken = $this->getTokenObjectFromSession())) {
+        $resetToken = $this->getTokenObjectFromSession();
+        if (null === $resetToken) {
             $resetToken = $this->resetPasswordHelper->generateFakeResetToken();
         }
 
@@ -138,7 +142,9 @@ class ResetPasswordController extends AbstractController
             }
         }
 
-        $resetErrors = $request->getSession()->getFlashBag()->get('reset_password_error');
+        /** @var \Symfony\Component\HttpFoundation\Session\Session $session */
+        $session = $request->getSession();
+        $resetErrors = $session->getFlashBag()->get('reset_password_error');
 
         return $this->render('reset_password/reset.html.twig', [
             'errors'      => $errors,

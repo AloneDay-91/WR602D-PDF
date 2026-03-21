@@ -11,7 +11,7 @@ export default function ConvertPage({ tools = [], allTools, user = null }) {
                 <Header tools={allTools ?? tools} user={user} />
 
                 <main className="flex-1">
-                    <ConvertSection tools={tools} />
+                    <ConvertSection tools={tools} user={user} />
                 </main>
 
                 <Footer />

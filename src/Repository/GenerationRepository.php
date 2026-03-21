@@ -40,6 +40,23 @@ class GenerationRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    public function countByUserToday(User $user): int
+    {
+        $startOfDay = new \DateTime('today midnight');
+        $endOfDay   = new \DateTime('tomorrow midnight');
+
+        return (int) $this->createQueryBuilder('g')
+            ->select('COUNT(g.id)')
+            ->andWhere('g.user = :user')
+            ->andWhere('g.createdAt >= :start')
+            ->andWhere('g.createdAt < :end')
+            ->setParameter('user', $user)
+            ->setParameter('start', $startOfDay)
+            ->setParameter('end', $endOfDay)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
 
     //    /**
     //     * @return Generation[] Returns an array of Generation objects
