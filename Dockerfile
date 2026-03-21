@@ -1,4 +1,12 @@
-# ─── Stage 1 : build des assets front ───────────────────────────────────────
+# ─── Stage 1 : dépendances PHP (Composer) ────────────────────────────────────
+FROM composer:2 AS composer-deps
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --prefer-dist
+
+# ─── Stage 2 : build des assets front ────────────────────────────────────────
 FROM node:20-alpine AS frontend
 
 WORKDIR /app
@@ -9,9 +17,12 @@ RUN npm ci
 COPY webpack.config.js postcss.config.mjs ./
 COPY assets/ assets/
 
+# Nécessaire pour résoudre @symfony/ux-react via Encore
+COPY --from=composer-deps /app/vendor vendor/
+
 RUN npm run build
 
-# ─── Stage 2 : image finale PHP 8.3 Apache ───────────────────────────────────
+# ─── Stage 3 : image finale PHP 8.3 Apache ───────────────────────────────────
 FROM php:8.3-apache
 
 # Dépendances système
@@ -51,8 +62,8 @@ COPY . .
 # Assets compilés depuis le stage frontend
 COPY --from=frontend /app/public/build public/build/
 
-# Dépendances PHP (production)
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Dépendances PHP (production) depuis le stage composer
+COPY --from=composer-deps /app/vendor vendor/
 
 # Répertoires runtime nécessaires
 RUN mkdir -p var/pdf_storage var/queue_storage var/log var/cache \
