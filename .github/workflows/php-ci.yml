@@ -36,6 +36,10 @@ jobs:
                   key: ${{ runner.os }}-php-8.3-${{ hashFiles('**/composer.lock') }}
             - name: Install Dependencies
               run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+            - name: Install Node dependencies
+              run: npm ci
+            - name: Build assets
+              run: npm run build
             - name: Create Database
               run: |
                   mkdir -p data
