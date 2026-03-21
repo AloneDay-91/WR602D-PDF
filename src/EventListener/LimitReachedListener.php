@@ -16,6 +16,7 @@ final class LimitReachedListener
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly EntityManagerInterface $em,
+        private readonly string $mailerFrom,
     ) {
     }
 
@@ -31,7 +32,7 @@ final class LimitReachedListener
         }
 
         $email = (new TemplatedEmail())
-            ->from(new Address('noreply@zenpdf.fr', 'ZenPDF'))
+            ->from(new Address($this->mailerFrom, 'ZenPDF'))
             ->to((string) $user->getEmail())
             ->subject('Limite de conversions atteinte — ZenPDF')
             ->htmlTemplate('emails/limit_reached.html.twig')
