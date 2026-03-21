@@ -92,7 +92,11 @@ final class AbonnementController extends AbstractController
         }
 
         $successUrl = $this->generateUrl('app_abonnement_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
-        $cancelUrl  = $this->generateUrl('app_abonnement_cancel',  [], UrlGeneratorInterface::ABSOLUTE_URL);
+        $cancelUrl  = $this->generateUrl('app_abonnement_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        if (!$plan->getStripePriceId()) {
+            throw $this->createNotFoundException('Ce plan n\'a pas de prix Stripe configuré.');
+        }
 
         $checkoutUrl = $stripeService->createCheckoutSession($user, $plan, $successUrl, $cancelUrl, $customerId);
 

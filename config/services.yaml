@@ -36,6 +36,14 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Controller\ConvertisseurController:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Command\HandleQueueCommand:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Service\StripeService:
         arguments:
             $secretKey: '%stripe_secret_key%'

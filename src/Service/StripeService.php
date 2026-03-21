@@ -11,6 +11,9 @@ use Stripe\Invoice;
 use Stripe\Stripe;
 use Stripe\Webhook;
 
+/**
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ */
 class StripeService
 {
     public function __construct(

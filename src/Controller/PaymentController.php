@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\Plan;
+use App\Entity\User;
 use App\Repository\PlanRepository;
 use App\Service\StripeService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -22,6 +24,7 @@ class PaymentController extends AbstractController
     public function checkout(
         Plan $plan,
         StripeService $stripeService,
+        EntityManagerInterface $em,
     ): Response {
         // Le plan FREE ne nécessite pas de paiement
         if ($plan->getStripePriceId() === null) {
@@ -29,6 +32,14 @@ class PaymentController extends AbstractController
             return $this->redirectToRoute('app_index');
         }
 
+        /** @var User $user */
+        $user = $this->getUser();
+
+        [$customerId, $isNew] = $stripeService->getOrCreateCustomer($user);
+        if ($isNew) {
+            $user->setStripeCustomerId($customerId);
+            $em->flush();
+        }
 
         $successUrl = $this->generateUrl(
             'app_payment_success',
@@ -36,19 +47,18 @@ class PaymentController extends AbstractController
             UrlGeneratorInterface::ABSOLUTE_URL
         );
 
-
         $cancelUrl = $this->generateUrl(
             'app_payment_cancel',
             [],
             UrlGeneratorInterface::ABSOLUTE_URL
         );
 
-
         $checkoutUrl = $stripeService->createCheckoutSession(
-            $this->getUser(),
+            $user,
             $plan,
             $successUrl,
             $cancelUrl,
+            $customerId,
         );
 
 
