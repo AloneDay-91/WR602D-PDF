@@ -1,0 +1,15 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}Votre document est prêt — ZenPDF{% endblock %}
+
+{% block body %}
+    <div class="badge badge-green">✅ Document prêt</div>
+    <h1>Votre document est prêt</h1>
+    <p>Bonjour {{ user.firstname ?? user.email }},</p>
+    <p>
+        Votre document <strong>{{ filename }}</strong> a été généré avec succès.
+        Vous le trouverez en pièce jointe.
+    </p>
+    <p>Vous pouvez également le retrouver à tout moment dans votre historique.</p>
+    <a href="{{ absolute_url('/historique') }}" class="btn">Voir mon historique</a>
+{% endblock %}

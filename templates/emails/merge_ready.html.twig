@@ -1,0 +1,15 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}Votre fusion PDF est prête — ZenPDF{% endblock %}
+
+{% block body %}
+    <div class="badge badge-green">✅ Fusion terminée</div>
+    <h1>Votre fusion PDF est prête</h1>
+    <p>Bonjour {{ user.firstname ?? user.email }},</p>
+    <p>
+        Votre demande de fusion PDF a été traitée avec succès.
+        Retrouvez votre document en pièce jointe.
+    </p>
+    <p>Vous pouvez également le télécharger depuis votre historique à tout moment.</p>
+    <a href="{{ absolute_url('/historique') }}" class="btn">Voir mon historique</a>
+{% endblock %}
