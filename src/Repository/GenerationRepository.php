@@ -6,6 +6,7 @@ use App\Entity\Generation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use DateTime;
 
 /**
  * @extends ServiceEntityRepository<Generation>
@@ -42,8 +43,8 @@ class GenerationRepository extends ServiceEntityRepository
 
     public function countByUserToday(User $user): int
     {
-        $startOfDay = new \DateTime('today midnight');
-        $endOfDay   = new \DateTime('tomorrow midnight');
+        $startOfDay = new DateTime('today midnight');
+        $endOfDay   = new DateTime('tomorrow midnight');
 
         return (int) $this->createQueryBuilder('g')
             ->select('COUNT(g.id)')

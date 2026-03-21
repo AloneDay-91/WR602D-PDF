@@ -2,25 +2,34 @@
 
 namespace App\Controller;
 
+use App\Entity\QueueEntry;
 use App\Entity\User;
 use App\Event\PdfGeneratedEvent;
 use App\Repository\ToolRepository;
 use App\Security\Voter\GenerationLimitVoter;
 use App\Security\Voter\ToolAccessVoter;
 use App\Services\ApiGotenberg;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use DateTimeImmutable;
 
+/**
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ */
 #[IsGranted('ROLE_USER')]
 final class ConvertisseurController extends AbstractController
 {
     public function __construct(
-        private readonly ApiGotenberg             $pdfService,
+        private readonly ApiGotenberg $pdfService,
         private readonly EventDispatcherInterface $dispatcher,
+        private readonly EntityManagerInterface $em,
+        private readonly string $projectDir,
     ) {
     }
 
@@ -94,37 +103,118 @@ final class ConvertisseurController extends AbstractController
         ];
     }
 
+    // --- URL → PDF ---
+
+    #[IsGranted('ROLE_USER')]
+    #[Route('/convertisseur/url', name: 'app_convertisseur_url_post', methods: ['POST'])]
+    public function convertUrl(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
+
+        $url = $request->request->get('url');
+        if (!$url) {
+            return new Response('Veuillez fournir une URL.', 400);
+        }
+
+        $pdfContent = $this->pdfService->convertUrlToPdf($url);
+        $this->dispatchGeneration('url', $pdfContent, 'converted.pdf', 'application/pdf');
+
+        return $this->pdfResponse($pdfContent);
+    }
+
+    // --- HTML → PDF ---
+
     #[IsGranted('ROLE_BASIC')]
     #[Route('/convertisseur', name: 'app_convertisseur_post', methods: ['POST'])]
     public function convert(Request $request): Response
     {
         $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
 
-        $url = $request->request->get('url');
         $htmlFile = $request->files->get('htmlFile');
 
-        if ($htmlFile) {
-            $htmlContent = file_get_contents($htmlFile->getPathname());
-            $pdfContent = $this->pdfService->convertHtmlToPdf($htmlContent);
-        } elseif ($url) {
-            $pdfContent = $this->pdfService->convertUrlToPdf($url);
-        } else {
-            return new Response('Veuillez fournir une URL ou un fichier HTML.', 400);
+        if (!$htmlFile) {
+            return new Response('Veuillez fournir un fichier HTML.', 400);
         }
 
-        $slug = $htmlFile ? 'html' : 'url';
-        $this->dispatchGeneration($slug, $pdfContent, 'converted.pdf', 'application/pdf');
+        $htmlContent = file_get_contents($htmlFile->getPathname());
+        $pdfContent  = $this->pdfService->convertHtmlToPdf($htmlContent);
+
+        $this->dispatchGeneration('html', $pdfContent, 'converted.pdf', 'application/pdf');
 
         return $this->pdfResponse($pdfContent);
+    }
+
+    // --- Markdown → PDF ---
+
+    #[IsGranted('ROLE_BASIC')]
+    #[Route('/convertisseur/markdown', name: 'app_convert_markdown', methods: ['POST'])]
+    public function convertMarkdown(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
+
+        $file = $request->files->get('file');
+        if (!$file) {
+            return new Response('Aucun fichier fourni.', 400);
+        }
+
+        $pdfContent = $this->pdfService->convertMarkdownToPdf(
+            file_get_contents($file->getPathname()),
+            $file->getClientOriginalName()
+        );
+
+        $this->dispatchGeneration('markdown', $pdfContent, 'converted.pdf', 'application/pdf');
+
+        return $this->pdfResponse($pdfContent);
+    }
+
+    // --- Screenshot URL → PNG ---
+
+    #[IsGranted('ROLE_BASIC')]
+    #[Route('/convertisseur/screenshot', name: 'app_convert_screenshot', methods: ['POST'])]
+    public function convertScreenshot(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
+
+        $url = $request->request->get('url');
+        if (!$url) {
+            return new Response('Veuillez fournir une URL.', 400);
+        }
+
+        $imgContent = $this->pdfService->screenshotUrl($url);
+        $this->dispatchGeneration('screenshot', $imgContent, 'screenshot.png', 'image/png');
+
+        return new Response($imgContent, 200, [
+            'Content-Type'        => 'image/png',
+            'Content-Disposition' => 'attachment; filename="screenshot.png"',
+        ]);
+    }
+
+    // --- WYSIWYG → PDF ---
+
+    #[IsGranted('ROLE_BASIC')]
+    #[Route('/convertisseur/wysiwyg', name: 'app_convert_wysiwyg', methods: ['POST'])]
+    public function convertWysiwyg(Request $request): Response
+    {
+        $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
+
+        $htmlContent = $request->request->get('htmlContent', '');
+        if (empty(trim(strip_tags($htmlContent)))) {
+            return new Response('Le contenu est vide.', 400);
+        }
+
+        $pdfContent = $this->pdfService->convertWysiwygToPdf($htmlContent);
+        $this->dispatchGeneration('wysiwyg', $pdfContent, 'document.pdf', 'application/pdf');
+
+        return $this->pdfResponse($pdfContent, 'document.pdf');
     }
 
     // --- LibreOffice single-file (word, excel, powerpoint, image) ---
 
     #[IsGranted('ROLE_BASIC')]
-    #[Route('/convertisseur/word',        name: 'app_convert_word',        methods: ['POST'])]
-    #[Route('/convertisseur/excel',       name: 'app_convert_excel',       methods: ['POST'])]
-    #[Route('/convertisseur/powerpoint',  name: 'app_convert_powerpoint',  methods: ['POST'])]
-    #[Route('/convertisseur/image',       name: 'app_convert_image',       methods: ['POST'])]
+    #[Route('/convertisseur/word', name: 'app_convert_word', methods: ['POST'])]
+    #[Route('/convertisseur/excel', name: 'app_convert_excel', methods: ['POST'])]
+    #[Route('/convertisseur/powerpoint', name: 'app_convert_powerpoint', methods: ['POST'])]
+    #[Route('/convertisseur/image', name: 'app_convert_image', methods: ['POST'])]
     public function convertLibreOffice(Request $request): Response
     {
         $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
@@ -146,30 +236,46 @@ final class ConvertisseurController extends AbstractController
         return $this->pdfResponse($pdfContent);
     }
 
-    // --- Merge ---
+    // --- Merge (via queue) ---
 
     #[IsGranted('ROLE_PREMIUM')]
     #[Route('/convertisseur/merge', name: 'app_convert_merge', methods: ['POST'])]
-    public function convertMerge(Request $request): Response
+    public function convertMerge(Request $request): JsonResponse
     {
         $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
 
         $files = $request->files->get('files', []);
         if (empty($files)) {
-            return new Response('Aucun fichier fourni.', 400);
+            return new JsonResponse(['error' => 'Aucun fichier fourni.'], 400);
         }
 
-        $filesData = array_map(fn($f) => [
-            'content'  => file_get_contents($f->getPathname()),
-            'filename' => $f->getClientOriginalName(),
-            'mimeType' => $f->getMimeType() ?? 'application/pdf',
-        ], $files);
+        /** @var User $user */
+        $user     = $this->getUser();
+        $queueDir = $this->projectDir . '/var/queue_storage/' . bin2hex(random_bytes(8));
 
-        $pdfContent = $this->pdfService->mergeFilesToPdf($filesData);
+        if (!is_dir($queueDir)) {
+            mkdir($queueDir, 0755, true);
+        }
 
-        $this->dispatchGeneration('merge', $pdfContent, 'merged.pdf', 'application/pdf');
+        foreach ($files as $file) {
+            $safeName = bin2hex(random_bytes(4)) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $file->move($queueDir, $safeName);
+        }
 
-        return $this->pdfResponse($pdfContent, 'merged.pdf');
+        $entry = new QueueEntry();
+        $entry->setUser($user);
+        $entry->setFilesDir($queueDir);
+        $entry->setStatus('pending');
+        $entry->setCreatedAt(new DateTimeImmutable());
+
+        $this->em->persist($entry);
+        $this->em->flush();
+
+        return new JsonResponse([
+            'status'  => 'queued',
+            'message' => 'Votre demande de fusion a été ajoutée à la file d\'attente. Vous recevrez un email une fois le traitement terminé.',
+            'entryId' => $entry->getId(),
+        ], 202);
     }
 
     // --- Split ---
@@ -180,7 +286,7 @@ final class ConvertisseurController extends AbstractController
     {
         $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
 
-        $file = $request->files->get('file');
+        $file      = $request->files->get('file');
         $splitMode = $request->request->get('splitMode', 'intervals');
         $splitSpan = $request->request->get('splitSpan', '1');
 
@@ -198,7 +304,7 @@ final class ConvertisseurController extends AbstractController
         $this->dispatchGeneration('split', $pdfContent, 'split.zip', 'application/zip');
 
         return new Response($pdfContent, 200, [
-            'Content-Type' => 'application/zip',
+            'Content-Type'        => 'application/zip',
             'Content-Disposition' => 'attachment; filename="split.zip"',
         ]);
     }
@@ -211,7 +317,7 @@ final class ConvertisseurController extends AbstractController
     {
         $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
 
-        $file = $request->files->get('file');
+        $file     = $request->files->get('file');
         $standard = $request->request->get('standard', 'PDF/A-2b');
 
         if (!$file) {
@@ -238,7 +344,7 @@ final class ConvertisseurController extends AbstractController
     {
         $this->denyAccessUnlessGranted(GenerationLimitVoter::CREATE, $this->getUser());
 
-        $file = $request->files->get('file');
+        $file          = $request->files->get('file');
         $userPassword  = $request->request->get('userPassword') ?: null;
         $ownerPassword = $request->request->get('ownerPassword') ?: null;
 
@@ -273,7 +379,7 @@ final class ConvertisseurController extends AbstractController
     private function pdfResponse(string $content, string $filename = 'converted.pdf'): Response
     {
         return new Response($content, 200, [
-            'Content-Type' => 'application/pdf',
+            'Content-Type'        => 'application/pdf',
             'Content-Disposition' => "attachment; filename=\"$filename\"",
         ]);
     }
