@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Vérifiez votre email — ZenPDF{% endblock %}
+
+{% block body %}
+    <div {{ react_component('VerifyNoticePage', {
+        flashes: {
+            success: app.flashes('success'),
+            error: app.flashes('verify_email_error')
+        }
+    }) }}>
+        Loading...
+    </div>
+{% endblock %}
