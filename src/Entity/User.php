@@ -15,6 +15,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 #[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
+/**
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ */
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -40,13 +43,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, UserContact>
      */
-    #[ORM\OneToMany(targetEntity: UserContact::class, mappedBy: 'userId')]
+    #[ORM\OneToMany(targetEntity: UserContact::class, mappedBy: 'user')]
     private Collection $userContacts;
 
     /**
      * @var Collection<int, Generation>
      */
-    #[ORM\OneToMany(targetEntity: Generation::class, mappedBy: 'user_id')]
+    #[ORM\OneToMany(targetEntity: Generation::class, mappedBy: 'user')]
     private Collection $generations;
 
     #[ORM\Column(length: 255)]
@@ -73,6 +76,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column]
     private bool $isVerified = false;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $stripeCustomerId = null;
+
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    private ?\DateTime $lastLimitEmailAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTime $subscriptionEndsAt = null;
 
     public function __construct()
     {
@@ -116,6 +128,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
 
+        // Dynamically add the role from the user's plan
+        if ($this->plan !== null && $this->plan->getRole() !== null) {
+            $roles[] = $this->plan->getRole();
+        }
+
         return array_unique($roles);
     }
 
@@ -150,7 +167,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __serialize(): array
     {
         $data = (array) $this;
-        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
+        $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
 
         return $data;
     }
@@ -173,7 +190,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->userContacts->contains($userContact)) {
             $this->userContacts->add($userContact);
-            $userContact->setUserId($this);
+            $userContact->setUser($this);
         }
 
         return $this;
@@ -182,9 +199,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeUserContact(UserContact $userContact): static
     {
         if ($this->userContacts->removeElement($userContact)) {
-            // set the owning side to null (unless already changed)
-            if ($userContact->getUserId() === $this) {
-                $userContact->setUserId(null);
+            if ($userContact->getUser() === $this) {
+                $userContact->setUser(null);
             }
         }
 
@@ -203,7 +219,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->generations->contains($generation)) {
             $this->generations->add($generation);
-            $generation->setUserId($this);
+            $generation->setUser($this);
         }
 
         return $this;
@@ -212,9 +228,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeGeneration(Generation $generation): static
     {
         if ($this->generations->removeElement($generation)) {
-            // set the owning side to null (unless already changed)
-            if ($generation->getUserId() === $this) {
-                $generation->setUserId(null);
+            if ($generation->getUser() === $this) {
+                $generation->setUser(null);
             }
         }
 
@@ -313,6 +328,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsVerified(bool $isVerified): static
     {
         $this->isVerified = $isVerified;
+
+        return $this;
+    }
+
+    public function getStripeCustomerId(): ?string
+    {
+        return $this->stripeCustomerId;
+    }
+
+    public function setStripeCustomerId(?string $stripeCustomerId): static
+    {
+        $this->stripeCustomerId = $stripeCustomerId;
+
+        return $this;
+    }
+
+    public function getLastLimitEmailAt(): ?\DateTime
+    {
+        return $this->lastLimitEmailAt;
+    }
+
+    public function setLastLimitEmailAt(?\DateTime $lastLimitEmailAt): static
+    {
+        $this->lastLimitEmailAt = $lastLimitEmailAt;
+
+        return $this;
+    }
+
+    public function getSubscriptionEndsAt(): ?\DateTime
+    {
+        return $this->subscriptionEndsAt;
+    }
+
+    public function setSubscriptionEndsAt(?\DateTime $subscriptionEndsAt): static
+    {
+        $this->subscriptionEndsAt = $subscriptionEndsAt;
 
         return $this;
     }
