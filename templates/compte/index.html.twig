@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon compte{% endblock %}
+
+{% block body %}
+    <div {{ react_component('AccountPage', {
+        tools: tools,
+        userData: userData
+    }) }}>
+        Loading...
+    </div>
+{% endblock %}

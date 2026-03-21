@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}ZenPDF — Contact{% endblock %}
+
+{% block body %}
+    <div {{ react_component('ContactPage', {
+        tools: tools,
+        user: app.user ? {
+            firstname:        app.user.firstname,
+            lastname:         app.user.lastname,
+            email:            app.user.email,
+            isBasic:          is_granted('ROLE_BASIC'),
+            isPremium:        is_granted('ROLE_PREMIUM'),
+            generationsToday: app.user ? user_generations_today() : 0,
+            limitGeneration:  app.user and app.user.plan ? app.user.plan.limitGeneration : 0
+        } : null,
+        prefill: prefill
+    }) }}>
+        Loading...
+    </div>
+{% endblock %}

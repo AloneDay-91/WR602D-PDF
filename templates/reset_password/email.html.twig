@@ -1,0 +1,22 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}Réinitialisation de mot de passe — ZenPDF{% endblock %}
+
+{% block body %}
+    <div class="badge badge-yellow">🔐 Réinitialisation</div>
+    <h1>Réinitialiser votre mot de passe</h1>
+    <p>Bonjour,</p>
+    <p>
+        Vous avez demandé la réinitialisation de votre mot de passe ZenPDF.
+        Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
+    </p>
+    <a href="{{ url('app_reset_password', { token: resetToken.token }) }}" class="btn">
+        Réinitialiser mon mot de passe
+    </a>
+    <p style="font-size: 13px; color: #a1a1aa;">
+        Ce lien expirera dans {{ resetToken.expirationMessageKey|trans(resetToken.expirationMessageData, 'ResetPasswordBundle') }}.
+        Si vous n'avez pas demandé cette réinitialisation, ignorez simplement cet email.
+    </p>
+{% endblock %}
+
+{% block footer_reason %}Vous recevez cet email car une demande de réinitialisation a été effectuée sur votre compte.{% endblock %}

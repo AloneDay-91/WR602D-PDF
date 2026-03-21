@@ -1,0 +1,15 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}Limite de conversions atteinte — ZenPDF{% endblock %}
+
+{% block body %}
+    <div class="badge badge-yellow">⚡ Limite atteinte</div>
+    <h1>Vous avez atteint votre limite</h1>
+    <p>Bonjour {{ user.firstname }},</p>
+    <p>
+        Vous avez utilisé vos <strong>{{ limit }} conversion{{ limit > 1 ? 's' : '' }}</strong> disponibles aujourd'hui.
+        Votre compteur se réinitialisera automatiquement demain à minuit.
+    </p>
+    <p>Pour des conversions illimitées, passez à un plan supérieur.</p>
+    <a href="{{ absolute_url('/abonnement') }}" class="btn">Voir les offres</a>
+{% endblock %}

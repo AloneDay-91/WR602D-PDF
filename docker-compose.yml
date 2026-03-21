@@ -1,0 +1,65 @@
+version: "3.8"
+services:
+  web:
+    image: mmi3docker/symfony-2024
+    container_name: symfony-web-wr602d
+    hostname: symfony-web
+    restart: always
+    ports:
+      - 8319:80
+    depends_on:
+      - db
+
+    volumes:
+      - ./www/:/var/www/
+      - ./sites/:/etc/apache2/sites-enabled/
+
+  db:
+    image: mariadb:10.8
+    container_name: symfony-db-wr602d
+    hostname: symfony-db
+    restart: always
+
+    volumes:
+      - db-volume:/var/lib/mysql
+
+    environment:
+      MYSQL_ROOT_PASSWORD: PASSWORD
+      MYSQL_DATABASE: symfony
+      MYSQL_USER: symfony
+      MYSQL_PASSWORD: PASSWORD
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: symfony-adminsql-wr602d
+    hostname: symfony-adminsql
+    restart: always
+    ports:
+      - 8080:80
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: PASSWORD
+      MYSQL_USER: symfony
+      MYSQL_PASSWORD: PASSWORD
+      MYSQL_DATABASE: symfony
+
+  maildev:
+    image: maildev/maildev
+    container_name: symfony-mail-wr602d
+    hostname: symfony-mail
+    command: bin/maildev --web 1080 --smtp 1025 --hide-extensions STARTTLS
+    restart: always
+
+    ports:
+      - 1080:1080
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: symfony-gotenberg-wr602d
+    hostname: symfony-gotenberg
+    restart: always
+    ports:
+      - 3000:3000
+
+volumes:
+  db-volume:

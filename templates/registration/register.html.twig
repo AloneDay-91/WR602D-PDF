@@ -1,0 +1,12 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscription{% endblock %}
+
+{% block body %}
+    <div {{ react_component('RegisterPage', {
+        plans: plans,
+        errors: errors,
+        formData: formData,
+        csrfToken: csrf_token('registration_form')
+    }) }}></div>
+{% endblock %}
