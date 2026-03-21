@@ -51,6 +51,7 @@ security:
         - { path: ^/logout,         roles: PUBLIC_ACCESS }
         - { path: ^/register,       roles: PUBLIC_ACCESS }
         - { path: ^/verify/email,   roles: PUBLIC_ACCESS }
+        - { path: ^/verify/notice,  roles: PUBLIC_ACCESS }
         - { path: ^/reset-password, roles: PUBLIC_ACCESS }
         - { path: ^/contact,         roles: PUBLIC_ACCESS }
         - { path: ^/abonnement$,    roles: PUBLIC_ACCESS }
@@ -63,9 +64,13 @@ security:
         - { path: ^/abonnement/portal,      roles: ROLE_USER }
         - { path: ^/compte,                 roles: ROLE_USER }
         - { path: ^/historique,             roles: ROLE_USER }
+        - { path: ^/api/contacts,           roles: ROLE_USER }
 
         # Routes nécessitant au minimum ROLE_BASIC (abonné)
-        - { path: ^/convertisseur/html,          roles: ROLE_BASIC }
+        - { path: ^/convertisseur/html,       roles: ROLE_BASIC }
+        - { path: ^/convertisseur/markdown,   roles: ROLE_BASIC }
+        - { path: ^/convertisseur/screenshot, roles: ROLE_BASIC }
+        - { path: ^/convertisseur/wysiwyg,    roles: ROLE_BASIC }
 
 when@test:
     security:
