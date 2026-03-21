@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+vendor
+var/cache
+var/log
+var/pdf_storage
+var/queue_storage
+public/build
+tests
+*.md
+.env.local
+.env.test
+.env.*.local
