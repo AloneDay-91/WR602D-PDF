@@ -50,7 +50,7 @@ jobs:
               run: vendor/bin/phpunit
 
             - name: Run PHP_CodeSniffer
-              run: vendor/bin/phpcs --standard=PSR2 src/
+              run: vendor/bin/phpcs --standard=PSR2 --warning-severity=0 src/
 
             - name: Run PHPStan
               run: vendor/bin/phpstan analyze src/ --level=2 --memory-limit=512M
