@@ -15,5 +15,4 @@ class ToolRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Tool::class);
     }
-
 }
