@@ -17,6 +17,11 @@ wait-for-it "${DB_HOST}:${DB_PORT}" --timeout=60 --strict -- echo "Base de donnÃ
 echo "==> Migrations Doctrine..."
 php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
 
+if [ "${LOAD_FIXTURES:-false}" = "true" ]; then
+    echo "==> Chargement des fixtures..."
+    php bin/console doctrine:fixtures:load --no-interaction --append
+fi
+
 echo "==> Installation des assets Symfony..."
 php bin/console assets:install public --no-interaction
 
