@@ -2,79 +2,91 @@
 
 namespace App\Tests;
 
+use App\Repository\PlanRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManager;
-use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class RegistrationControllerTest extends WebTestCase
 {
     private KernelBrowser $client;
-    private UserRepository $userRepository;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
-
-        // Ensure we have a clean database
-        $container = static::getContainer();
+        $container    = static::getContainer();
 
         /** @var EntityManager $em */
-        $em = $container->get('doctrine')->getManager();
-        $this->userRepository = $container->get(UserRepository::class);
+        $em             = $container->get('doctrine')->getManager();
+        $userRepository = $container->get(UserRepository::class);
 
-        foreach ($this->userRepository->findAll() as $user) {
+        foreach ($userRepository->findAll() as $user) {
             $em->remove($user);
         }
-
         $em->flush();
     }
 
     public function testRegister(): void
     {
-        // Register a new user
-        $this->client->request('GET', '/register');
-        self::assertResponseIsSuccessful();
-        self::assertPageTitleContains('Register');
+        $client    = $this->client;
+        $container = static::getContainer();
 
-        $this->client->submitForm('Register', [
-            'registration_form[email]' => 'me@example.com',
-            'registration_form[plainPassword]' => 'password',
-            'registration_form[agreeTerms]' => true,
+        /** @var PlanRepository $planRepo */
+        $planRepo = $container->get(PlanRepository::class);
+        $freePlan = $planRepo->findOneBy(['role' => null]);
+
+        // Page loads with correct French title
+        $client->request('GET', '/register');
+        self::assertResponseIsSuccessful();
+        self::assertPageTitleContains('Inscription');
+
+        // Extract CSRF token from the page's React props JSON
+        $pageContent = $client->getResponse()->getContent();
+        preg_match('/data-symfony--ux-react--react-props-value="([^"]+)"/', $pageContent, $propsMatch);
+        $props = json_decode(html_entity_decode($propsMatch[1] ?? '{}'), true);
+        $csrfToken = $props['csrfToken'] ?? '';
+
+        // Submit form via direct POST (registration uses a React component)
+        $client->request('POST', '/register', [
+            'registration_form' => [
+                'email'         => 'me@example.com',
+                'firstname'     => 'Jean',
+                'lastname'      => 'Dupont',
+                'plan'          => $freePlan?->getId(),
+                'plainPassword' => 'password123',
+                'agreeTerms'    => '1',
+                '_token'        => $csrfToken,
+            ],
         ]);
 
-        // Ensure the response redirects after submitting the form, the user exists, and is not verified
-        // self::assertResponseRedirects('/');  @TODO: set the appropriate path that the user is redirected to.
-        self::assertCount(1, $this->userRepository->findAll());
-        self::assertFalse(($user = $this->userRepository->findAll()[0])->isVerified());
+        // After successful registration, redirects to verify notice
+        self::assertResponseRedirects('/verify/notice');
 
-        // Ensure the verification email was sent
-        // Use either assertQueuedEmailCount() || assertEmailCount() depending on your mailer setup
-        // self::assertQueuedEmailCount(1);
+        $userRepository = $container->get(UserRepository::class);
+        self::assertCount(1, $userRepository->findAll());
+        $user = $userRepository->findAll()[0];
+        self::assertFalse($user->isVerified());
+
+        // Verification email was sent
         self::assertEmailCount(1);
-
-        self::assertCount(1, $messages = $this->getMailerMessages());
-        self::assertEmailAddressContains($messages[0], 'from', 'elouan.bruzek@etudiant.univ-reims.fr');
+        $messages = $this->getMailerMessages();
+        self::assertCount(2, $messages);
+        self::assertEmailAddressContains($messages[0], 'from', 'noreply@zenpdf.fr');
         self::assertEmailAddressContains($messages[0], 'to', 'me@example.com');
-        self::assertEmailTextBodyContains($messages[0], 'This link will expire in 1 hour.');
 
-        // Login the new user
-        $this->client->followRedirect();
-        $this->client->loginUser($user);
-
-        // Get the verification link from the email
-        /** @var TemplatedEmail $templatedEmail */
-        $templatedEmail = $messages[0];
-        $messageBody = $templatedEmail->getHtmlBody();
+        // Extract the verification link from HTML email body
+        $client->loginUser($user);
+        $messageBody = $messages[0]->getHtmlBody();
         self::assertIsString($messageBody);
 
-        preg_match('#(http://localhost/verify/email.+)">#', $messageBody, $resetLink);
+        preg_match('#href="(http://localhost/verify/email[^"]+)"#', $messageBody, $match);
+        self::assertNotEmpty($match, 'Verification link not found in email body');
 
-        // "Click" the link and see if the user is verified
-        $this->client->request('GET', $resetLink[1]);
-        $this->client->followRedirect();
+        // Click the verification link
+        $client->request('GET', $match[1]);
+        $client->followRedirect();
 
-        self::assertTrue(static::getContainer()->get(UserRepository::class)->findAll()[0]->isVerified());
+        self::assertTrue($container->get(UserRepository::class)->findAll()[0]->isVerified());
     }
 }
