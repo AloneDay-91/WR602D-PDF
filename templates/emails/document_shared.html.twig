@@ -1,0 +1,16 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block title %}{{ sender_name }} vous a partagé un document — ZenPDF{% endblock %}
+
+{% block body %}
+    <div class="badge badge-blue">📎 Document partagé</div>
+    <h1>Un document vous a été partagé</h1>
+    <p>Bonjour {{ contact_firstname }} {{ contact_lastname }},</p>
+    <p>
+        <strong>{{ sender_name }}</strong> vous a partagé le document
+        <strong>{{ filename }}</strong> via ZenPDF.
+        Vous le trouverez en pièce jointe.
+    </p>
+{% endblock %}
+
+{% block footer_reason %}Vous recevez cet email car un utilisateur ZenPDF vous a partagé un document.{% endblock %}
