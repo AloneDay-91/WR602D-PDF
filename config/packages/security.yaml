@@ -25,8 +25,7 @@ security:
                 enable_csrf: true
             logout:
                 path: app_logout
-                # where to redirect after logout
-                # target: app_any_route
+
 
             # Activate different ways to authenticate:
             # https://symfony.com/doc/current/security.html#the-firewall
@@ -42,24 +41,36 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
+        # Stripe — webhook + pages de résultat
+        - { path: ^/payment/webhook,    roles: PUBLIC_ACCESS }
+        - { path: ^/abonnement/success, roles: PUBLIC_ACCESS }
+        - { path: ^/abonnement/cancel,  roles: PUBLIC_ACCESS }
+
         # Routes publiques
         - { path: ^/login,          roles: PUBLIC_ACCESS }
         - { path: ^/logout,         roles: PUBLIC_ACCESS }
         - { path: ^/register,       roles: PUBLIC_ACCESS }
         - { path: ^/verify/email,   roles: PUBLIC_ACCESS }
+        - { path: ^/verify/notice,  roles: PUBLIC_ACCESS }
         - { path: ^/reset-password, roles: PUBLIC_ACCESS }
-        - { path: ^/contact,        roles: PUBLIC_ACCESS }
+        - { path: ^/contact,         roles: PUBLIC_ACCESS }
         - { path: ^/abonnement$,    roles: PUBLIC_ACCESS }
         - { path: ^/$,              roles: PUBLIC_ACCESS }
         - { path: ^/convertisseur/url,             roles: ROLE_USER }
 
         # Routes nécessitant un compte (sans plan obligatoire)
         - { path: ^/abonnement/select-plan, roles: ROLE_USER }
+        - { path: ^/abonnement/checkout,    roles: ROLE_USER }
+        - { path: ^/abonnement/portal,      roles: ROLE_USER }
         - { path: ^/compte,                 roles: ROLE_USER }
         - { path: ^/historique,             roles: ROLE_USER }
+        - { path: ^/api/contacts,           roles: ROLE_USER }
 
         # Routes nécessitant au minimum ROLE_BASIC (abonné)
-        - { path: ^/convertisseur/html,          roles: ROLE_BASIC }
+        - { path: ^/convertisseur/html,       roles: ROLE_BASIC }
+        - { path: ^/convertisseur/markdown,   roles: ROLE_BASIC }
+        - { path: ^/convertisseur/screenshot, roles: ROLE_BASIC }
+        - { path: ^/convertisseur/wysiwyg,    roles: ROLE_BASIC }
 
 when@test:
     security:

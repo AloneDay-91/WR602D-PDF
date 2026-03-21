@@ -1,0 +1,26 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accès refusé – ZenPDF{% endblock %}
+
+{% block body %}
+<div style="font-family:sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#fafafa;padding:2rem;">
+    <div style="max-width:480px;width:100%;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:2.5rem;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.06);">
+        <div style="font-size:3.5rem;margin-bottom:1rem;">🔒</div>
+        <h1 style="font-size:1.5rem;font-weight:800;color:#111;margin:0 0 .5rem;">Accès refusé</h1>
+        <p style="color:#6b7280;margin:0 0 1.5rem;line-height:1.6;">
+            Votre plan actuel ne vous donne pas accès à cette fonctionnalité.
+            {% if app.user and app.user.plan %}
+                <br><strong>Plan actuel&nbsp;: {{ app.user.plan.name }}</strong>
+            {% endif %}
+        </p>
+        <div style="display:flex;flex-direction:column;gap:.75rem;">
+            <a href="/abonnement" style="display:block;background:#111;color:#fff;padding:.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;">
+                Voir les offres
+            </a>
+            <a href="/convertisseur" style="display:block;border:1px solid #e5e7eb;color:#374151;padding:.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:500;font-size:.9rem;">
+                Retour aux outils
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
