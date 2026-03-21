@@ -51,21 +51,23 @@ class AppFixtures extends Fixture
     private function createTool(ObjectManager $manager, object $repo, string $name, string $description, string $color, string $icon, string $slug, array $plans): void
     {
         $tool = $repo->findOneBy(['slug' => $slug]);
-        if ($tool) {
-            return;
+        if (!$tool) {
+            $tool = new Tool();
+            $tool->setName($name);
+            $tool->setDescription($description);
+            $tool->setColor($color);
+            $tool->setIcon($icon);
+            $tool->setSlug($slug);
+            $tool->setIsActive(true);
+            $manager->persist($tool);
         }
 
-        $tool = new Tool();
-        $tool->setName($name);
-        $tool->setDescription($description);
-        $tool->setColor($color);
-        $tool->setIcon($icon);
-        $tool->setSlug($slug);
-        $tool->setIsActive(true);
+        // Sync plans (add missing ones)
         foreach ($plans as $plan) {
-            $tool->addPlan($plan);
+            if (!$tool->getPlans()->contains($plan)) {
+                $tool->addPlan($plan);
+            }
         }
-        $manager->persist($tool);
     }
 
     private function createFreeTools(ObjectManager $manager, object $repo, Plan $free, Plan $basic, Plan $premium): void
