@@ -14,6 +14,10 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class ContactController extends AbstractController
 {
+    public function __construct(private readonly string $mailerFrom)
+    {
+    }
+
     #[Route('/contact', name: 'app_contact')]
     public function index(ToolRepository $toolRepository): Response
     {
@@ -76,7 +80,7 @@ final class ContactController extends AbstractController
         }
 
         $mail = (new TemplatedEmail())
-            ->from(new Address('noreply@zenpdf.fr', 'ZenPDF'))
+            ->from(new Address($this->mailerFrom, 'ZenPDF'))
             ->to('contact@zenpdf.fr')
             ->replyTo($email)
             ->subject("[Contact] $subject")

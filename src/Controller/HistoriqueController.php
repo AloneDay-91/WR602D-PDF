@@ -33,6 +33,7 @@ final class HistoriqueController extends AbstractController
         private readonly string $projectDir,
         private readonly EntityManagerInterface $em,
         private readonly MailerInterface $mailer,
+        private readonly string $mailerFrom,
     ) {
     }
 
@@ -344,7 +345,7 @@ final class HistoriqueController extends AbstractController
     private function sendShareEmail(UserContact $contact, string $senderName, string $filename, string $pdfContent, string $mimeType): void
     {
         $email = (new TemplatedEmail())
-            ->from(new Address('noreply@zenpdf.fr', 'ZenPDF'))
+            ->from(new Address($this->mailerFrom, 'ZenPDF'))
             ->to($contact->getEmail())
             ->subject(sprintf('%s vous a partagé un document – ZenPDF', $senderName))
             ->htmlTemplate('emails/document_shared.html.twig')

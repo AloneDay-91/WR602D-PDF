@@ -24,6 +24,7 @@ final class NotifyExpiringSubscriptionsCommand extends Command
         private readonly UserRepository $userRepository,
         private readonly MailerInterface $mailer,
         private readonly EntityManagerInterface $em,
+        private readonly string $mailerFrom,
     ) {
         parent::__construct();
     }
@@ -48,7 +49,7 @@ final class NotifyExpiringSubscriptionsCommand extends Command
 
             foreach ($users as $user) {
                 $email = (new TemplatedEmail())
-                    ->from(new Address('noreply@zenpdf.fr', 'ZenPDF'))
+                    ->from(new Address($this->mailerFrom, 'ZenPDF'))
                     ->to((string) $user->getEmail())
                     ->subject('Votre abonnement ZenPDF expire bientôt')
                     ->htmlTemplate('emails/subscription_expiry.html.twig')

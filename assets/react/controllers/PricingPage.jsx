@@ -213,7 +213,11 @@ export default function PricingPage({ plans = [], tools = [], user = null, curre
 
     const handleSelectPlan = async (plan) => {
         if (!user) { window.location.href = "/login"; return; }
-        if (plan.price > 0) { window.location.href = `/abonnement/checkout/${plan.id}`; return; }
+        if (plan.price > 0) {
+            const billing = annual && plan.hasYearlyPrice ? "?billing=yearly" : "";
+            window.location.href = `/abonnement/checkout/${plan.id}${billing}`;
+            return;
+        }
 
         setLoadingPlanId(plan.id);
         setStatus(null);

@@ -29,7 +29,7 @@ export default function HeroSection() {
 
                 {/* Headline */}
                 <div className="space-y-4">
-                    <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-tight">
+                    <h1 className="text-5xl sm:text-6xl tracking-tight leading-tight">
                         Convertissez vos fichiers en{" "}
                         <span className="text-primary relative">
                             PDF

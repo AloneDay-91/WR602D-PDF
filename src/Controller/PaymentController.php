@@ -59,6 +59,7 @@ class PaymentController extends AbstractController
             $successUrl,
             $cancelUrl,
             $customerId,
+            (string) $plan->getStripePriceId(),
         );
 
 
