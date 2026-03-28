@@ -51,6 +51,9 @@ class Plan
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $stripePriceId = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $stripePriceIdYearly = null;
+
     /**
      * @var Collection<int, User>
      */
@@ -207,6 +210,18 @@ class Plan
     public function setStripePriceId(?string $stripePriceId): static
     {
         $this->stripePriceId = $stripePriceId;
+
+        return $this;
+    }
+
+    public function getStripePriceIdYearly(): ?string
+    {
+        return $this->stripePriceIdYearly;
+    }
+
+    public function setStripePriceIdYearly(?string $stripePriceIdYearly): static
+    {
+        $this->stripePriceIdYearly = $stripePriceIdYearly;
 
         return $this;
     }

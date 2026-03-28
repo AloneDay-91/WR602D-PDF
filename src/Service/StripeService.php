@@ -56,12 +56,13 @@ class StripeService
         string $successUrl,
         string $cancelUrl,
         string $customerId,
+        string $priceId,
     ): string {
         $session = Session::create([
             'mode'       => 'subscription',
             'customer'   => $customerId,
             'line_items' => [[
-                'price'    => $plan->getStripePriceId(),
+                'price'    => $priceId,
                 'quantity' => 1,
             ]],
             'success_url' => $successUrl . '?session_id={CHECKOUT_SESSION_ID}',

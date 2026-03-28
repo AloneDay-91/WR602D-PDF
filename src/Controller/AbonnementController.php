@@ -39,13 +39,14 @@ final class AbonnementController extends AbstractController
 
         $plansData = array_map(function ($plan) use ($toolsByPlanId) {
             return [
-                'id' => $plan->getId(),
-                'name' => $plan->getName(),
-                'description' => $plan->getDescription(),
-                'price' => $plan->getPrice(),
-                'specialPrice' => $plan->getSpecialPrice(),
-                'limitGeneration' => $plan->getLimitGeneration(),
-                'tools' => $toolsByPlanId[$plan->getId()] ?? [],
+                'id'                   => $plan->getId(),
+                'name'                 => $plan->getName(),
+                'description'          => $plan->getDescription(),
+                'price'                => $plan->getPrice(),
+                'specialPrice'         => $plan->getSpecialPrice(),
+                'limitGeneration'      => $plan->getLimitGeneration(),
+                'tools'                => $toolsByPlanId[$plan->getId()] ?? [],
+                'hasYearlyPrice'       => $plan->getStripePriceIdYearly() !== null,
             ];
         }, $plans);
 
@@ -79,7 +80,7 @@ final class AbonnementController extends AbstractController
 
     #[IsGranted('ROLE_USER')]
     #[Route('/abonnement/checkout/{id}', name: 'app_abonnement_checkout', methods: ['GET'])]
-    public function checkout(Plan $plan, StripeService $stripeService, EntityManagerInterface $em): Response
+    public function checkout(Plan $plan, Request $request, StripeService $stripeService, EntityManagerInterface $em): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -94,11 +95,16 @@ final class AbonnementController extends AbstractController
         $successUrl = $this->generateUrl('app_abonnement_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
         $cancelUrl  = $this->generateUrl('app_abonnement_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
-        if (!$plan->getStripePriceId()) {
+        $yearly  = $request->query->get('billing') === 'yearly';
+        $priceId = $yearly && $plan->getStripePriceIdYearly()
+            ? $plan->getStripePriceIdYearly()
+            : $plan->getStripePriceId();
+
+        if (!$priceId) {
             throw $this->createNotFoundException('Ce plan n\'a pas de prix Stripe configuré.');
         }
 
-        $checkoutUrl = $stripeService->createCheckoutSession($user, $plan, $successUrl, $cancelUrl, $customerId);
+        $checkoutUrl = $stripeService->createCheckoutSession($user, $plan, $successUrl, $cancelUrl, $customerId, $priceId);
 
         return $this->redirect($checkoutUrl);
     }

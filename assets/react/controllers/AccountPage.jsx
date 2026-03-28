@@ -54,6 +54,12 @@ function applyPrimaryColor(hex) {
     root.style.setProperty("--sidebar-ring",       hsl);
 }
 
+function resetPrimaryColor() {
+    const root = document.documentElement;
+    ["--primary","--ring","--primary-foreground","--accent","--accent-foreground","--sidebar-primary","--sidebar-ring"]
+        .forEach(p => root.style.removeProperty(p));
+}
+
 function planIcon(planName) {
     if (!planName) return <User className="h-4 w-4" />;
     const n = planName.toUpperCase();
@@ -197,6 +203,12 @@ function ProfileSection({ initialData, onUserUpdate }) {
                             <div className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: form.favoriteColor || "transparent" }} />
                             <span className="text-sm text-muted-foreground font-mono">{form.favoriteColor || "Non définie"}</span>
                         </div>
+                        {form.favoriteColor && (
+                            <Button type="button" variant="ghost" size="sm"
+                                onClick={() => { setForm(f => ({ ...f, favoriteColor: "" })); resetPrimaryColor(); }}>
+                                Réinitialiser
+                            </Button>
+                        )}
                     </div>
                     <p className="text-xs text-muted-foreground">Personnalise la couleur principale de l'interface.</p>
                 </div>
